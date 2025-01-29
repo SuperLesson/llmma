@@ -96,37 +96,20 @@ class OpenRouterProvider(StreamProvider):
 
     def prepare_input(
         self,
-        prompt: str,
-        history: list[dict] | None = None,
-        system_message: str | list[dict] | None = None,
-        temperature: float = 0,
-        max_tokens: int = 300,
-        stream: bool = False,
+        site_url: str | None = None,
+        app_name: str | None = None,
         **kwargs,
     ) -> dict:
-        messages = [{"role": "user", "content": prompt}]
-
-        if history:
-            messages = [*history, *messages]
-
-        if isinstance(system_message, str):
-            messages = [{"role": "system", "content": system_message}, *messages]
-        elif isinstance(system_message, list):
-            messages = [*system_message, *messages]
-
         return {
-            "messages": messages,
-            "temperature": temperature,
-            "max_tokens": max_tokens,
-            "stream": stream,
             "extra_headers": {
-                "HTTP-Referer": kwargs.get("site_url", ""),
-                "X-Title": kwargs.get("app_name", ""),
+                "HTTP-Referer": site_url or "",
+                "X-Title": app_name or "",
             },
             **kwargs,
         }
 
     def complete(self, messages: list[dict], **kwargs) -> dict:
+        kwargs = self.prepare_input(**kwargs)
         response = self.client.chat.completions.create(
             model=self.model, messages=t.cast(t.Any, messages), stream=False, **kwargs
         )
@@ -138,6 +121,7 @@ class OpenRouterProvider(StreamProvider):
         }
 
     async def acomplete(self, messages: list[dict], **kwargs) -> dict:
+        kwargs = self.prepare_input(**kwargs)
         response = await self.async_client.chat.completions.create(
             model=self.model, messages=t.cast(t.Any, messages), stream=False, **kwargs
         )
@@ -149,6 +133,7 @@ class OpenRouterProvider(StreamProvider):
         }
 
     def complete_stream(self, messages: list[dict], **kwargs) -> t.Iterator[str]:
+        kwargs = self.prepare_input(**kwargs)
         for chunk in self.client.chat.completions.create(
             model=self.model, messages=t.cast(t.Any, messages), stream=True, **kwargs
         ):
@@ -156,6 +141,7 @@ class OpenRouterProvider(StreamProvider):
                 yield chunk.choices[0].delta.content
 
     async def acomplete_stream(self, messages: list[dict], **kwargs) -> t.AsyncIterator[str]:
+        kwargs = self.prepare_input(**kwargs)
         async for chunk in await self.async_client.chat.completions.create(
             model=self.model, messages=t.cast(t.Any, messages), stream=True, **kwargs
         ):
