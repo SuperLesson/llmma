@@ -1,13 +1,13 @@
 import typing as t
-from dataclasses import dataclass
 
 import tiktoken
+from attrs import define
 from mistralai import Mistral
 
 from .base import ModelInfo, StreamProvider, msg_as_str
 
 
-@dataclass
+@define
 class MistralProvider(StreamProvider):
     MODEL_INFO = {
         "mistral-tiny": ModelInfo(prompt_cost=0.25, completion_cost=0.25, context_limit=32_000),

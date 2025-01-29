@@ -1,13 +1,13 @@
 import typing as t
-from dataclasses import dataclass
 
 import tiktoken
+from attrs import define
 from openai import AsyncOpenAI, OpenAI
 
 from .base import AsyncProvider, ModelInfo
 
 
-@dataclass
+@define
 class DeepSeekProvider(AsyncProvider):
     MODEL_INFO = {
         "deepseek-chat": ModelInfo(prompt_cost=0.14, completion_cost=0.28, context_limit=64_000, output_limit=8_192),

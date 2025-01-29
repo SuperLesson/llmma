@@ -1,12 +1,12 @@
 import typing as t
-from dataclasses import dataclass
 
 import anthropic
+from attrs import define
 
 from .base import ModelInfo, StreamProvider
 
 
-@dataclass
+@define
 class AnthropicProvider(StreamProvider):
     MODEL_INFO = {
         "claude-3-haiku-latest": ModelInfo(
@@ -48,8 +48,13 @@ class AnthropicProvider(StreamProvider):
     def complete(self, messages: list[dict], **kwargs) -> dict:
         messages, system = self._prepare_messages(messages)
         response = self.client.messages.create(
-            model=self.model, messages=t.cast(t.Any, messages), system=system or anthropic.NOT_GIVEN, **kwargs
+            model=self.model,
+            messages=t.cast(t.Any, messages),
+            system=system or anthropic.NOT_GIVEN,
+            stream=False,
+            **kwargs,
         )
+        assert response.content[0].type == "text"
         return {
             "completion": response.content[0].text,
             "prompt_tokens": response.usage.input_tokens,
@@ -59,8 +64,13 @@ class AnthropicProvider(StreamProvider):
     async def acomplete(self, messages: list[dict], **kwargs) -> dict:
         messages, system = self._prepare_messages(messages)
         response = await self.async_client.messages.create(
-            model=self.model, messages=t.cast(t.Any, messages), system=system or anthropic.NOT_GIVEN, **kwargs
+            model=self.model,
+            messages=t.cast(t.Any, messages),
+            system=system or anthropic.NOT_GIVEN,
+            stream=False,
+            **kwargs,
         )
+        assert response.content[0].type == "text"
         return {
             "completion": response.content[0].text,
             "prompt_tokens": response.usage.input_tokens,

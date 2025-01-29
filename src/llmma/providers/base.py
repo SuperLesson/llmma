@@ -2,9 +2,9 @@ import json
 import time
 import typing as t
 import warnings
-from abc import ABC, abstractmethod
 from contextlib import contextmanager
-from dataclasses import dataclass, field
+
+from attrs import define, field
 
 
 def msg_from_raw(cont: str | dict | list[dict], role: str = "user") -> list[dict]:
@@ -22,15 +22,13 @@ def msg_as_str(cont: list[dict]) -> str:
 Provider = t.Union["AsyncProvider", "StreamProvider", "SyncProvider"]
 
 
-@dataclass
-class ABCResult(ABC):
+@define
+class ABCResult:
     provider: Provider
     model_inputs: dict
-
-    def __post_init__(self):
-        self._meta = self._meta or {}
-        self.function_call = self.function_call or {}
-        self.text = self.text or ""
+    function_call: dict = field(init=False, factory=dict)
+    _meta: dict = field(init=False, factory=dict)
+    text: str = field(init=False, default="")
 
     @property
     def completion_tokens(self) -> int:
@@ -91,19 +89,23 @@ class ABCResult(ABC):
         )
 
 
-@dataclass
+@define
 class Result(ABCResult):
     text: str
-    _meta: dict = field(default_factory=dict)
-    function_call: dict = field(default_factory=dict)
+    _meta: dict = field(factory=dict)
+    function_call: dict = field(factory=dict)
 
 
-@dataclass
+@define
 class StreamResult(ABCResult):
     _stream: t.Iterator
-    _streamed_text: list = field(default_factory=list)
-    _meta: dict = field(default_factory=dict)
-    function_call: dict = field(default_factory=dict)
+    _streamed_text: list = field(factory=list)
+    _meta: dict = field(factory=dict)
+    function_call: dict = field(factory=dict)
+
+    def __attrs_post_init__(self):
+        _ = all(self.stream)
+        self.text = "".join(self._streamed_text)
 
     @property
     def stream(self):
@@ -111,19 +113,20 @@ class StreamResult(ABCResult):
             self._streamed_text.append(t)
             yield t
 
-    @property
-    def text(self) -> str:
-        _ = all(self.stream)
-        return "".join(self._streamed_text)
 
-
-@dataclass
+@define
 class AsyncStreamResult(ABCResult):
     _stream: t.AsyncIterable
     _stream_exhausted: bool = False
-    _streamed_text: list = field(default_factory=list)
-    _meta: dict = field(default_factory=dict)
-    function_call: dict = field(default_factory=dict)
+    _streamed_text: list = field(factory=list)
+    _meta: dict = field(factory=dict)
+    function_call: dict = field(factory=dict)
+
+    def __attrs_post_init__(self):
+        if not self._stream_exhausted:
+            msg = "Please finish streaming the result."
+            raise RuntimeError(msg)
+        self.text = "".join(self._streamed_text)
 
     @property
     async def stream(self) -> t.AsyncIterator[Result]:
@@ -136,15 +139,8 @@ class AsyncStreamResult(ABCResult):
             for r in self._streamed_text:
                 yield r
 
-    @property
-    def text(self):
-        if not self._stream_exhausted:
-            msg = "Please finish streaming the result."
-            raise RuntimeError(msg)
-        return "".join(self._streamed_text)
 
-
-@dataclass
+@define
 class ModelInfo:
     prompt_cost: float
     completion_cost: float
@@ -154,20 +150,20 @@ class ModelInfo:
     hf_repo: str | None = None
     chat: bool = True
     local: bool = False
-    quirks: dict[str, t.Any] = field(default_factory=dict)
+    quirks: dict[str, t.Any] = field(factory=dict)
 
     def __post_init__(self):
         if self.output_limit is None:
             self.output_limit = self.context_limit // 2
 
 
-@dataclass
-class SyncProvider(ABC):
+@define
+class SyncProvider:
     """Base class for all providers.
     Methods will raise NotImplementedError if they are not overwritten.
     """
 
-    api_key: str
+    api_key: str = field(repr=False)
     model: t.Any = None
     latency: float | None = None
     MODEL_INFO: t.ClassVar[dict[str, ModelInfo]] = {}
@@ -196,31 +192,26 @@ class SyncProvider(ABC):
         cost = ((prompt_tokens * self.info.prompt_cost) + (completion_tokens * self.info.completion_cost)) / 1_000_000
         return round(cost, 5)
 
-    @abstractmethod
     def _count_tokens(self, content: list[dict]) -> int:
-        pass
+        raise
 
     def count_tokens(self, content: str | dict | list[dict]) -> int:
         return self._count_tokens(msg_from_raw(content))
 
-    @abstractmethod
     def complete(self, messages: list[dict], **kwargs) -> dict:
-        pass
+        raise
 
 
-@dataclass
-class AsyncProvider(SyncProvider, ABC):
-    @abstractmethod
+@define
+class AsyncProvider(SyncProvider):
     async def acomplete(self, messages: list[dict], **kwargs) -> dict:
-        pass
+        raise
 
 
-@dataclass
-class StreamProvider(AsyncProvider, ABC):
-    @abstractmethod
+@define
+class StreamProvider(AsyncProvider):
     def complete_stream(self, messages: list[dict], **kwargs) -> t.Iterator[str]:
-        pass
+        raise
 
-    @abstractmethod
     def acomplete_stream(self, messages: list[dict], **kwargs) -> t.AsyncIterator[str]:
-        pass
+        raise

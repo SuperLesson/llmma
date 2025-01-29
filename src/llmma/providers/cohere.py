@@ -1,13 +1,13 @@
 import os
 import typing as t
-from dataclasses import dataclass
 
 import cohere
+from attrs import define
 
 from .base import ModelInfo, StreamProvider, msg_as_str
 
 
-@dataclass
+@define
 class CohereProvider(StreamProvider):
     MODEL_INFO = {
         "command": ModelInfo(prompt_cost=15.0, completion_cost=15, context_limit=2048),

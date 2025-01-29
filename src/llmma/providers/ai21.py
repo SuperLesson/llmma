@@ -1,13 +1,12 @@
-from dataclasses import dataclass
-
 import ai21
 from ai21.models.chat import ChatMessage
 from ai21.tokenizers import get_tokenizer
+from attrs import define
 
 from .base import ModelInfo, SyncProvider, msg_as_str
 
 
-@dataclass
+@define
 class AI21Provider(SyncProvider):
     # per million tokens
     MODEL_INFO = {

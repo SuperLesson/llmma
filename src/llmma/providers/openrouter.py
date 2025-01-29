@@ -1,13 +1,13 @@
 import typing as t
-from dataclasses import dataclass
 
 import tiktoken
+from attrs import define
 from openai import AsyncOpenAI, OpenAI
 
 from .base import ModelInfo, StreamProvider, msg_as_str
 
 
-@dataclass
+@define
 class OpenRouterProvider(StreamProvider):
     MODEL_INFO = {
         "nvidia/llama-3.1-nemotron-70b-instruct": ModelInfo(

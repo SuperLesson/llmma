@@ -1,6 +1,6 @@
 import typing as t
-from dataclasses import dataclass
 
+from attrs import define
 from ollama import AsyncClient, Client
 
 from .base import ModelInfo, StreamProvider, msg_as_str
@@ -24,7 +24,7 @@ def get_provider(host: str, context_limit: int = 4096, output_limit: int = 2048,
             output_limit=output_limit,
         )
 
-    @dataclass
+    @define
     class OllamaProvider(StreamProvider):
         api_key = ""
         MODEL_INFO = model_info

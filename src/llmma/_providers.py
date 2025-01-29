@@ -1,4 +1,4 @@
-from dataclasses import dataclass
+from attrs import define
 
 from .providers import (
     AI21Provider,
@@ -21,7 +21,7 @@ from .providers.base import Provider
 from .providers.ollama import get_provider
 
 
-@dataclass
+@define
 class ProviderSpec:
     kind: type[Provider]
     api_key_name: str | None = None

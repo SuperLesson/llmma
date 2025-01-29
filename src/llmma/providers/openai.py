@@ -1,14 +1,14 @@
 import json
 import typing as t
-from dataclasses import dataclass
 
 import tiktoken
+from attrs import define
 from openai import AsyncOpenAI, OpenAI
 
 from .base import ModelInfo, StreamProvider, msg_as_str
 
 
-@dataclass
+@define
 class OpenAIProvider(StreamProvider):
     # cost is per million tokens
     MODEL_INFO = {

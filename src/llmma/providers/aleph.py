@@ -1,14 +1,14 @@
 import os
 import typing as t
-from dataclasses import dataclass
 
 import tiktoken
 from aleph_alpha_client import AsyncClient, Client, CompletionRequest, Prompt
+from attrs import define
 
 from .base import AsyncProvider, ModelInfo, msg_as_str
 
 
-@dataclass
+@define
 class AlephAlphaProvider(AsyncProvider):
     MODEL_INFO = {
         "luminous-base": ModelInfo(prompt_cost=6.6, completion_cost=7.6, context_limit=2048),

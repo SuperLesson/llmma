@@ -1,11 +1,10 @@
-from dataclasses import dataclass
-
+from attrs import define
 from huggingface_hub import InferenceClient
 
 from .base import ModelInfo, SyncProvider
 
 
-@dataclass
+@define
 class HuggingfaceHubProvider(SyncProvider):
     MODEL_INFO = {
         "hf_deepseek-r1": ModelInfo(

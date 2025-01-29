@@ -1,8 +1,8 @@
 # NOTE: we could switch to genai  https://developers.generativeai.google/api/python/google/generativeai
 import math
-from dataclasses import dataclass
 
 import vertexai
+from attrs import define
 from vertexai.generative_models import GenerativeModel
 from vertexai.language_models import (
     ChatModel,
@@ -14,7 +14,7 @@ from vertexai.language_models import (
 from .base import ModelInfo, SyncProvider
 
 
-@dataclass
+@define
 class GoogleProvider(SyncProvider):
     api_key = ""
     # cost is per million tokens

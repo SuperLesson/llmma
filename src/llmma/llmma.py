@@ -5,9 +5,9 @@ import typing as t
 import warnings
 from collections import defaultdict
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from dataclasses import dataclass, field
 from logging import getLogger
 
+from attrs import define, field
 from prettytable import PrettyTable
 
 from ._providers import PROVIDERS, Provider
@@ -29,10 +29,10 @@ AsyncAPIResult = t.Awaitable[SyncAPIResult]
 APIResult = SyncAPIResult | AsyncAPIResult
 
 
-@dataclass
+@define
 class LLMMA:
     DEFAULT_MODEL = os.getenv("LLMMA_DEFAULT_MODEL") or "gpt-4o"
-    models: dict[str, Provider] = field(default_factory=dict)
+    models: dict[str, Provider] = field(factory=dict)
 
     @classmethod
     def default(cls, **kwargs):
@@ -86,13 +86,13 @@ class LLMMA:
     def to_list(self, query: str | None = None) -> list[dict[str, t.Any]]:
         return [
             {
-                "provider": provider.__name__,
+                "provider": provider.__class__.__name__,
                 "name": model,
                 "cost": cost,
             }
             for provider in self.models.values()
             for model, cost in provider.MODEL_INFO.items()
-            if not query or (query.lower() in model.lower() or query.lower() in provider.__name__.lower())
+            if not query or (query.lower() in model.lower() or query.lower() in provider.__class__.__name__.lower())
         ]
 
     def count_tokens(self, content: str | list[dict[str, t.Any]]) -> list[int]:

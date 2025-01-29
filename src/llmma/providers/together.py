@@ -1,14 +1,14 @@
 import typing as t
-from dataclasses import dataclass
 
 import tiktoken
 import together
+from attrs import define
 from together import AsyncTogether, Together
 
 from .base import ModelInfo, StreamProvider, msg_as_str
 
 
-@dataclass
+@define
 class TogetherProvider(StreamProvider):
     MODEL_INFO = {
         "meta-llama/Meta-Llama-3.1-405B-Instruct-Turbo": ModelInfo(

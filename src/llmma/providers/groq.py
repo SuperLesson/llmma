@@ -1,13 +1,13 @@
 import typing as t
-from dataclasses import dataclass
 
 import tiktoken
+from attrs import define
 from openai import AsyncOpenAI, OpenAI
 
 from .base import ModelInfo, StreamProvider
 
 
-@dataclass
+@define
 class GroqProvider(StreamProvider):
     MODEL_INFO = {
         "llama-3.1-405b-reasoning": ModelInfo(prompt_cost=0.59, completion_cost=0.79, context_limit=131072),

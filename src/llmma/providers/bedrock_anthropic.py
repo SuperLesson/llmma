@@ -1,12 +1,12 @@
 import os
-from dataclasses import dataclass
 
 from anthropic import AnthropicBedrock, AsyncAnthropicBedrock
+from attrs import define
 
 from .anthropic import AnthropicProvider, ModelInfo
 
 
-@dataclass
+@define
 class BedrockAnthropicProvider(AnthropicProvider):
     api_key = ""
     MODEL_INFO = {

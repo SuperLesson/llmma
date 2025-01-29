@@ -1,14 +1,14 @@
 import itertools as it
 import math
 import os
-from dataclasses import dataclass
 
 import google.generativeai as genai
+from attrs import define
 
 from .base import ModelInfo, SyncProvider, msg_as_str
 
 
-@dataclass
+@define
 class GoogleGenAIProvider(SyncProvider):
     # cost is per million tokens
     MODEL_INFO = {
