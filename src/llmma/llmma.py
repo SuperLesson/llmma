@@ -133,7 +133,7 @@ class LLMMA:
                 text=completion,
                 model_inputs=kwargs,
                 provider=model,
-                _meta={"latency": model.latency, **response},
+                meta={"latency": model.latency, **response},
                 function_call=function_call,
             )
 
@@ -162,7 +162,7 @@ class LLMMA:
                 text=completion,
                 model_inputs=kwargs,
                 provider=model,
-                _meta={"latency": model.latency, **response},
+                meta={"latency": model.latency, **response},
                 function_call=function_call,
             )
 
@@ -189,7 +189,7 @@ class LLMMA:
 
         # TODO: track latency
         return StreamResult(
-            _stream=model.complete_stream(messages, **kwargs),
+            stream=model.complete_stream(messages, **kwargs),
             model_inputs=kwargs,
             provider=model,
         )
