@@ -10,6 +10,7 @@ update:
 
 lint:
 	uv run ruff check
+	uv run pyright
 
 tidy:
 	uv run ruff check --fix --unsafe-fixes || true
