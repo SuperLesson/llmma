@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 import queue
 import re
 import threading
@@ -99,7 +97,8 @@ def process_prompts_sequentially(
                         **kwargs,
                     )[0]
                 )
-            ]
+            ],
+            strict=False,
         )
     )
     if not evaluator:

@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 import itertools as it
 import math
 import os

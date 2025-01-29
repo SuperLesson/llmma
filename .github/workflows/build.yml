@@ -1,0 +1,23 @@
+name: Build package
+on:
+  push:
+    tags:
+      - "*"
+jobs:
+  build:
+    name: python
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install UV
+        uses: astral-sh/setup-uv@v5
+      - name: Install Hatch
+        run: uv venv -p 3.10
+      - name: Hatch build
+        run: uv build
+      - name: Publish
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            dist/*

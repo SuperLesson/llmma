@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 # NOTE: we could switch to genai  https://developers.generativeai.google/api/python/google/generativeai
 import math
 from dataclasses import dataclass
@@ -86,7 +84,7 @@ class GoogleProvider(SyncProvider):
         if isinstance(self.client, GenerativeModel):
             chat = self.client.start_chat()
             response = chat.send_message([prompt], generation_config=kwargs)
-        elif isinstance(self.client, (ChatModel, CodeChatModel)):
+        elif isinstance(self.client, ChatModel | CodeChatModel):
             chat = self.client.start_chat()
             response = chat.send_message(**kwargs)
         else:  # text / code

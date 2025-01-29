@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 import asyncio
 import os
 import statistics
@@ -12,7 +10,7 @@ from logging import getLogger
 
 from prettytable import PrettyTable
 
-from ._providers import PROVIDER_MAP, Provider
+from ._providers import PROVIDERS, Provider
 from .providers.base import (
     AsyncProvider,
     AsyncStreamResult,
@@ -28,42 +26,43 @@ LOGGER = getLogger(__name__)
 
 SyncAPIResult = list[Result]
 AsyncAPIResult = t.Awaitable[SyncAPIResult]
-APIResult = t.Union[SyncAPIResult, AsyncAPIResult]
+APIResult = SyncAPIResult | AsyncAPIResult
 
 
 @dataclass
-class LLMS:
-    DEFAULT_MODEL = os.getenv("LLMS_DEFAULT_MODEL") or "gpt-3.5-turbo"
+class LLMMA:
+    DEFAULT_MODEL = os.getenv("LLMMA_DEFAULT_MODEL") or "gpt-4o"
     models: dict[str, Provider] = field(default_factory=dict)
 
     @classmethod
-    def default_provider(cls, **kwargs):
+    def default(cls, **kwargs):
         try:
-            return cls().add_provider(model=cls.DEFAULT_MODEL, **kwargs)
+            return cls().add_model(cls.DEFAULT_MODEL, **kwargs)
         except ValueError as e:
             msg = f"Default model {cls.DEFAULT_MODEL} not found in any provider"
             raise Exception(msg) from e
 
-    @classmethod
-    def single_provider(
-        cls, model: str | None = None, provider_name: str | None = None, api_key: str | None = None, **kwargs
-    ):
-        return cls().add_provider(model=model, provider_name=provider_name, api_key=api_key, **kwargs)
+    def add_model(self, model: str, api_key: str | None, **kwargs):
+        provider = next((p for p in PROVIDERS.values() if model in p.kind.MODEL_INFO), None)
+        if not provider:
+            msg = f"{model} is not registered"
+            raise ValueError(msg)
+        if provider.api_key_name:
+            api_key = api_key or os.getenv(provider.api_key_name)
+            if not api_key:
+                msg = f"{provider.api_key_name} environment variable is required"
+                raise Exception(msg)
 
-    def add_provider(
-        self, model: str | None = None, provider_name: str | None = None, api_key: str | None = None, **kwargs
-    ):
-        if provider_name:
-            try:
-                provider = PROVIDER_MAP[provider_name]
-            except KeyError as e:
-                msg = f"Provider {provider_name} not found among {list(PROVIDER_MAP.keys())}"
-                raise ValueError(msg) from e
-        else:
-            provider = next((p for p in PROVIDER_MAP.values() if model in p.kind.MODEL_INFO), None)
-            if not provider:
-                msg = "Either model or provider_name must be provided"
-                raise ValueError(msg)
+        impl = provider.kind(api_key=api_key or "", model=model, **kwargs)
+        self.models[impl.model] = impl
+        return self
+
+    def add_provider(self, provider_name: str, model: str | None = None, api_key: str | None = None, **kwargs):
+        try:
+            provider = PROVIDERS[provider_name]
+        except KeyError as e:
+            msg = f"Provider {provider_name} not found among {list(PROVIDERS.keys())}"
+            raise ValueError(msg) from e
 
         if provider.api_key_name:
             api_key = api_key or os.getenv(provider.api_key_name)
@@ -220,7 +219,7 @@ class LLMS:
         self,
         problems: list[tuple[str, str]] | None = None,
         delay: float = 0,
-        evaluator: LLMS | None = None,
+        evaluator: "LLMMA | None" = None,
         show_outputs: bool = False,
         **kwargs: t.Any,
     ) -> tuple[PrettyTable, PrettyTable | None]:
@@ -347,7 +346,7 @@ class LLMS:
             headers.pop("text")
             pytable.pop("text")
         table = PrettyTable(list(headers.values()))
-        table.add_rows(list(zip(*[pytable[k] for k in headers])))
+        table.add_rows(list(zip(*[pytable[k] for k in headers], strict=False)))
 
         return table, questions_table
 

@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 import typing as t
 from dataclasses import dataclass
 
@@ -89,7 +87,7 @@ class OpenRouterProvider(StreamProvider):
         tokens = [enc.encode(t, disallowed_special=()) for t in messages_text]
 
         n_tokens_list = []
-        for token, message in zip(tokens, messages):
+        for token, message in zip(tokens, messages, strict=False):
             n_tokens = len(token) + formatting_token_count
             if "name" in message:
                 n_tokens += -1

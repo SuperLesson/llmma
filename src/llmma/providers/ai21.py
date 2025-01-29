@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 from dataclasses import dataclass
 
 import ai21
@@ -35,12 +33,12 @@ class AI21Provider(SyncProvider):
     def complete(self, messages: list[dict], **kwargs) -> dict:
         data = self.prepare_input(**kwargs)
         response = self.client.chat.completions.create(
-            model=self.model, messages=[ChatMessage(**ms) for ms in messages], **data
+            model=self.model, messages=[ChatMessage(**ms) for ms in messages], stream=False, **data
         )
         return {
-            "completion": response.completions[0].data.text,
-            "prompt_tokens": len(response.prompt.tokens),
-            "completion_tokens": len(response.completions[0].data.tokens),
+            "completion": response.choices[0].message.content,
+            "prompt_tokens": response.usage.prompt_tokens,
+            "completion_tokens": response.usage.completion_tokens,
         }
 
     # TODO: async and stream support

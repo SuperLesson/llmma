@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 from dataclasses import dataclass
 
 from .providers import (
@@ -29,8 +27,12 @@ class ProviderSpec:
     api_key_name: str | None = None
     api_key: str | None = None
 
+    @property
+    def supported_models(self):
+        return self.kind.MODEL_INFO.keys()
 
-PROVIDER_MAP = {
+
+PROVIDERS = {
     "OpenAI": ProviderSpec(OpenAIProvider, "OPENAI_API_KEY"),
     "Anthropic": ProviderSpec(AnthropicProvider, "ANTHROPIC_API_KEY"),
     "BedrockAnthropic": ProviderSpec(BedrockAnthropicProvider),

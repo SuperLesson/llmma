@@ -1,11 +1,10 @@
 [project]
-name = "pyllms"
-version = "0.8.1"
+name = "llmma"
 description = "Minimal Python library to connect to LLMs (OpenAI, Anthropic, Google, Mistral, OpenRouter, Reka, Groq, Together, Ollama, AI21, Cohere, Aleph-Alpha, HuggingfaceHub), with a built-in model performance benchmark."
 readme = "README.md"
-authors = [{ name = "Vladimir Prelovac", email = "vlad@kagi.com" }]
+authors = [{ name = "Isabella Basso", email = "isabellabdoamaral@gmail.com" }]
 license = { file = "LICENSE" }
-requires-python = ">=3.9"
+requires-python = ">=3.10"
 classifiers = [
     "Development Status :: 3 - Alpha",
     "Intended Audience :: Developers",
@@ -57,6 +56,17 @@ dependencies = [
     "tiktoken>=0.8.0",
     "together>=1.3.11",
 ]
+dynamic = ["version"]
+
+[build-system]
+requires = ["hatchling", "hatch-vcs"]
+build-backend = "hatchling.build"
+
+[tool.hatch.version]
+source = "vcs"
+
+[tool.hatch.build.hooks.vcs]
+version-file = "src/llmma/_version.py"
 
 [project.urls]
 homepage = "https://github.com/kagisearch/pyllms"
@@ -75,7 +85,7 @@ dev = [
 allow-direct-references = true
 
 [tool.ruff]
-target-version = "py39"
+target-version = "py310"
 line-length = 119
 
 [tool.ruff.lint]
@@ -127,7 +137,7 @@ branch = true
 source = ["llms"]
 
 [tool.coverage.paths]
-source = ["llms", "*/site-packages"]
+source = ["src", "*/site-packages"]
 tests = ["tests", "*/tests"]
 
 [tool.coverage.report]
@@ -135,7 +145,7 @@ show_missing = true
 
 [tool.pyright]
 venv = ".venv"
-pythonVersion = "3.9"
+pythonVersion = "3.10"
 include = ["src"]
 exclude = [
     # "**/node_modules",
