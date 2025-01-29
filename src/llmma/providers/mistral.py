@@ -1,7 +1,7 @@
 import typing as t
 
 import tiktoken
-from attrs import define
+from attrs import define, field
 from mistralai import Mistral
 
 from .base import ModelInfo, StreamProvider, msg_as_str
@@ -22,8 +22,9 @@ class MistralProvider(StreamProvider):
         "open-mistral-nemo": ModelInfo(prompt_cost=0.3, completion_cost=0.3, context_limit=32_000),
     }
 
-    def __post_init__(self):
-        super().__post_init__()
+    client: Mistral = field(init=False)
+
+    def __attrs_post_init__(self):
         self.client = Mistral(api_key=self.api_key)
 
     def _count_tokens(self, content: list[dict]) -> int:

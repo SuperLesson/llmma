@@ -2,7 +2,7 @@
 import math
 
 import vertexai
-from attrs import define
+from attrs import define, field
 from vertexai.generative_models import GenerativeModel
 from vertexai.language_models import (
     ChatModel,
@@ -46,8 +46,10 @@ class GoogleProvider(SyncProvider):
         ),
     }
 
-    def __post_init__(self):
-        super().__post_init__()
+    client: TextGenerationModel | CodeGenerationModel | CodeChatModel | ChatModel | GenerativeModel = field(init=False)
+    prompt_key: str = field(init=False)
+
+    def __attrs_post_init__(self):
         model = self.model
 
         if model.startswith("text-"):

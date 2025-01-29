@@ -2,7 +2,7 @@ import typing as t
 
 import tiktoken
 import together
-from attrs import define
+from attrs import define, field
 from together import AsyncTogether, Together
 
 from .base import ModelInfo, StreamProvider, msg_as_str
@@ -18,8 +18,10 @@ class TogetherProvider(StreamProvider):
         ),
     }
 
-    def __post_init__(self):
-        super().__post_init__()
+    client: Together = field(init=False)
+    async_client: AsyncTogether = field(init=False)
+
+    def __attrs_post_init__(self):
         self.client = Together(api_key=self.api_key)
         self.async_client = AsyncTogether(api_key=self.api_key)
 

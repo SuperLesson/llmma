@@ -1,7 +1,7 @@
 import typing as t
 
 import tiktoken
-from attrs import define
+from attrs import define, field
 from reka.client import AsyncReka, Reka
 
 from .base import ModelInfo, StreamProvider, msg_as_str
@@ -10,13 +10,15 @@ from .base import ModelInfo, StreamProvider, msg_as_str
 @define
 class RekaProvider(StreamProvider):
     MODEL_INFO = {
+        "reka-core": ModelInfo(prompt_cost=3.0, completion_cost=15.0, context_limit=128000),
         "reka-edge": ModelInfo(prompt_cost=0.4, completion_cost=1.0, context_limit=128000),
         "reka-flash": ModelInfo(prompt_cost=0.8, completion_cost=2.0, context_limit=128000),
-        "reka-core": ModelInfo(prompt_cost=3.0, completion_cost=15.0, context_limit=128000),
     }
 
-    def __post_init__(self):
-        self.model = self.model or "reka-core"
+    client: Reka = field(init=False)
+    async_client: AsyncReka = field(init=False)
+
+    def __attrs_post_init__(self):
         self.client = Reka(api_key=self.api_key)
         self.async_client = AsyncReka(api_key=self.api_key)
 

@@ -3,7 +3,7 @@ import typing as t
 
 import tiktoken
 from aleph_alpha_client import AsyncClient, Client, CompletionRequest, Prompt
-from attrs import define
+from attrs import define, field
 
 from .base import AsyncProvider, ModelInfo, msg_as_str
 
@@ -17,12 +17,16 @@ class AlephAlphaProvider(AsyncProvider):
         "luminous-supreme-control": ModelInfo(prompt_cost=48.5, completion_cost=53.6, context_limit=2048),
     }
 
-    def __post_init__(self):
-        if not (host := os.getenv("ALEPHALPHA_HOST")):
+    client: Client = field(init=False)
+    async_client: AsyncClient = field(init=False)
+    host: str = field(factory=lambda: os.getenv("ALEPHALPHA_HOST", ""))
+
+    def __attrs_post_init__(self):
+        if not self.host:
             msg = "ALEPHALPHA_HOST environment variable is required"
             raise Exception(msg)
-        self.client = Client(self.api_key, host)
-        self.async_client = AsyncClient(self.api_key, host)
+        self.client = Client(self.api_key, self.host)
+        self.async_client = AsyncClient(self.api_key, self.host)
 
     def _count_tokens(self, content: list[dict]) -> int:
         enc = tiktoken.encoding_for_model("gpt-3.5-turbo")

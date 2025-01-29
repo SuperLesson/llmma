@@ -1,6 +1,6 @@
 import typing as t
 
-from attrs import define
+from attrs import define, field
 from ollama import AsyncClient, Client
 
 from .base import ModelInfo, StreamProvider, msg_as_str
@@ -29,8 +29,10 @@ def get_provider(host: str, context_limit: int = 4096, output_limit: int = 2048,
         api_key = ""
         MODEL_INFO = model_info
 
-        def __post_init__(self):
-            super().__post_init__()
+        client: Client = field(init=False)
+        async_client: AsyncClient = field(init=False)
+
+        def __attrs_post_init__(self):
             self.client = Client(host=host, **kwargs)
             self.async_client = AsyncClient(host=host, **kwargs)
 

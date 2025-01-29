@@ -26,8 +26,7 @@ class BedrockAnthropicProvider(AnthropicProvider):
     aws_secret_key: str | None = None
     aws_region: str | None = None
 
-    def __post_init__(self):
-        super().__post_init__()
+    def __attrs_post_init__(self):
         aws_access_key = self.aws_access_key or os.getenv("AWS_ACCESS_KEY_ID")
         aws_secret_key = self.aws_access_key or os.getenv("AWS_SECRET_ACCESS_KEY")
 

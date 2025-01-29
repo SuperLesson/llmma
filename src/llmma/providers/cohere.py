@@ -1,8 +1,7 @@
-import os
 import typing as t
 
 import cohere
-from attrs import define
+from attrs import define, field
 
 from .base import ModelInfo, StreamProvider, msg_as_str
 
@@ -14,9 +13,11 @@ class CohereProvider(StreamProvider):
         "command-nightly": ModelInfo(prompt_cost=15.0, completion_cost=15, context_limit=4096),
     }
 
-    def __post_init__(self):
-        super().__post_init__()
-        api_key = self.api_key or os.getenv("COHERE_API_KEY")
+    client: cohere.Client = field(init=False)
+    async_client: cohere.AsyncClient = field(init=False)
+
+    def __attrs_post_init__(self):
+        api_key = self.api_key
         self.client = cohere.Client(api_key)
         self.async_client = cohere.AsyncClient(api_key)
 

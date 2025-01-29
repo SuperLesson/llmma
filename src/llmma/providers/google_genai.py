@@ -1,9 +1,10 @@
 import itertools as it
 import math
 import os
+import typing as t
 
 import google.generativeai as genai
-from attrs import define
+from attrs import define, field
 
 from .base import ModelInfo, SyncProvider, msg_as_str
 
@@ -22,8 +23,10 @@ class GoogleGenAIProvider(SyncProvider):
         "gemini-1.5-pro-exp-0801": ModelInfo(prompt_cost=3.5, completion_cost=10.5, context_limit=128000),
     }
 
-    def __post_init__(self):
-        super().__post_init__()
+    client: t.Any = field(init=False)
+    mode: str = field(init=False)
+
+    def __attrs_post_init__(self):
         api_key = self.api_key or os.getenv("GOOGLE_API_KEY")
 
         self.client = genai.configure(api_key=api_key)  # type: ignore

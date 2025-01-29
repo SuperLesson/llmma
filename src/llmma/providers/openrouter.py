@@ -1,7 +1,7 @@
 import typing as t
 
 import tiktoken
-from attrs import define
+from attrs import define, field
 from openai import AsyncOpenAI, OpenAI
 
 from .base import ModelInfo, StreamProvider, msg_as_str
@@ -67,9 +67,10 @@ class OpenRouterProvider(StreamProvider):
             context_limit=128000,
         ),
     }
+    client: OpenAI = field(init=False)
+    async_client: AsyncOpenAI = field(init=False)
 
-    def __post_init__(self):
-        super().__post_init__()
+    def __attrs_post_init__(self):
         self.client = OpenAI(
             api_key=self.api_key,
             base_url="https://openrouter.ai/api/v1",

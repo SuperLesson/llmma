@@ -1,7 +1,7 @@
 import typing as t
 
 import anthropic
-from attrs import define
+from attrs import define, field
 
 from .base import ModelInfo, StreamProvider
 
@@ -26,8 +26,10 @@ class AnthropicProvider(StreamProvider):
         ),
     }
 
-    def __post_init__(self):
-        super().__post_init__()
+    client: anthropic.Anthropic | anthropic.AnthropicBedrock = field(init=False)
+    async_client: anthropic.AsyncAnthropic | anthropic.AsyncAnthropicBedrock = field(init=False)
+
+    def __attrs_post_init__(self):
         self.client = anthropic.Anthropic(api_key=self.api_key)
         self.async_client = anthropic.AsyncAnthropic(api_key=self.api_key)
 

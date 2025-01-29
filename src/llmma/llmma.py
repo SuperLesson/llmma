@@ -58,8 +58,9 @@ class LLMMA:
         return self
 
     def add_provider(self, provider_name: str, model: str | None = None, api_key: str | None = None, **kwargs):
+        inv_map = {p.casefold().lower(): p for p in PROVIDERS}
         try:
-            provider = PROVIDERS[provider_name]
+            provider = PROVIDERS[inv_map[provider_name.casefold().lower()]]
         except KeyError as e:
             msg = f"Provider {provider_name} not found among {list(PROVIDERS.keys())}"
             raise ValueError(msg) from e

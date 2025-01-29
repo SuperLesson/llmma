@@ -1,7 +1,7 @@
 import ai21
 from ai21.models.chat import ChatMessage
 from ai21.tokenizers import get_tokenizer
-from attrs import define
+from attrs import define, field
 
 from .base import ModelInfo, SyncProvider, msg_as_str
 
@@ -14,8 +14,9 @@ class AI21Provider(SyncProvider):
         "j2-jumbo-instruct": ModelInfo(prompt_cost=15.0, completion_cost=15.0, context_limit=8192),
     }
 
-    def __post_init__(self):
-        super().__post_init__()
+    client: ai21.AI21Client = field(init=False)
+
+    def __attrs_post_init__(self):
         self.client = ai21.AI21Client(self.api_key)
 
     def _count_tokens(self, content: list[dict]) -> int:

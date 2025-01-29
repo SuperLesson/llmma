@@ -152,7 +152,7 @@ class ModelInfo:
     local: bool = False
     quirks: dict[str, t.Any] = field(factory=dict)
 
-    def __post_init__(self):
+    def __attrs_post_init__(self):
         if self.output_limit is None:
             self.output_limit = self.context_limit // 2
 
@@ -164,21 +164,25 @@ class SyncProvider:
     """
 
     api_key: str = field(repr=False)
-    model: t.Any = None
+    model: t.Any = field()
     latency: float | None = None
     MODEL_INFO: t.ClassVar[dict[str, ModelInfo]] = {}
+    info: ModelInfo = field(init=False)
 
-    def __post_init__(self):
-        self.model = self.model or list(self.MODEL_INFO.keys())[0]
-        if info := self.MODEL_INFO.get(self.model):
-            self.info = info
-        else:
+    @model.default
+    def _model_factory(self):
+        return list(self.MODEL_INFO.keys())[0]
+
+    @info.default
+    def _info_factory(self):
+        if self.model not in self.MODEL_INFO:
             warnings.warn(f"no information about cost of the model: {self.model}", UserWarning, stacklevel=2)
-            self.info = ModelInfo(
+            return ModelInfo(
                 prompt_cost=1,
                 completion_cost=1,
                 context_limit=4096,
             )
+        return self.MODEL_INFO[self.model]
 
     @contextmanager
     def track_latency(self):

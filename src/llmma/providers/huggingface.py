@@ -1,4 +1,4 @@
-from attrs import define
+from attrs import define, field
 from huggingface_hub import InferenceClient
 
 from .base import ModelInfo, SyncProvider
@@ -75,10 +75,10 @@ class HuggingfaceHubProvider(SyncProvider):
         ),
     }
 
-    def __post_init__(self, api_key=None, model=None):
-        super().__post_init__()
-        self.model = model
-        self.client = InferenceClient(self.info.hf_repo, token=api_key)
+    client: InferenceClient = field(init=False)
+
+    def __attrs_post_init__(self):
+        self.client = InferenceClient(self.info.hf_repo, token=self.api_key)
 
     def _count_tokens(self, content: list[dict]) -> int:
         raise
