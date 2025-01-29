@@ -12,46 +12,23 @@ from .base import ModelInfo, StreamProvider, msg_as_str
 class OpenAIProvider(StreamProvider):
     # cost is per million tokens
     MODEL_INFO = {
-        "gpt-3.5-turbo": ModelInfo(
-            prompt_cost=2.0,
-            completion_cost=2.0,
-            context_limit=16_385,
-            output_limit=4_096,
-        ),
-        "gpt-3.5-turbo-instruct": ModelInfo(
-            prompt_cost=2.0,
-            completion_cost=2.0,
-            context_limit=4096,
-            chat=False,
-        ),
-        "gpt-4": ModelInfo(
-            prompt_cost=30.0,
-            completion_cost=60.0,
-            context_limit=8192,
-        ),
-        "gpt-4-turbo": ModelInfo(
-            prompt_cost=10.0,
-            completion_cost=30.0,
-            context_limit=128_000,
-            output_limit=4_096,
-        ),
         "gpt-4o": ModelInfo(
             prompt_cost=2.5,
             completion_cost=10.0,
             context_limit=128_000,
-            output_limit=4_096,
+            output_limit=16_384,
         ),
         "gpt-4o-mini": ModelInfo(
             prompt_cost=0.15,
             completion_cost=0.60,
             context_limit=128_000,
-            output_limit=4_096,
+            output_limit=16_384,
         ),
-        "o1-preview": ModelInfo(
+        "o1": ModelInfo(
             prompt_cost=15.0,
             completion_cost=60.0,
-            context_limit=128_000,
-            output_limit=4_096,
+            context_limit=200_000,
+            output_limit=100_000,
             quirks={
                 "use_max_completion_tokens": True,
             },
@@ -60,16 +37,7 @@ class OpenAIProvider(StreamProvider):
             prompt_cost=3.0,
             completion_cost=12.0,
             context_limit=128_000,
-            output_limit=4_096,
-            quirks={
-                "use_max_completion_tokens": True,
-            },
-        ),
-        "o1": ModelInfo(
-            prompt_cost=15.0,
-            completion_cost=60.0,
-            context_limit=200_000,
-            output_limit=100_000,
+            output_limit=65_536,
             quirks={
                 "use_max_completion_tokens": True,
             },

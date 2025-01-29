@@ -10,8 +10,10 @@ from .base import AsyncProvider, ModelInfo
 @dataclass
 class DeepSeekProvider(AsyncProvider):
     MODEL_INFO = {
-        "deepseek-chat": ModelInfo(prompt_cost=0.14, completion_cost=0.28, context_limit=128000, output_limit=8192),
-        "deepseek-coder": ModelInfo(prompt_cost=0.14, completion_cost=0.28, context_limit=128000, output_limit=8192),
+        "deepseek-chat": ModelInfo(prompt_cost=0.14, completion_cost=0.28, context_limit=64_000, output_limit=8_192),
+        "deepseek-reasoner": ModelInfo(
+            prompt_cost=0.14, completion_cost=2.19, context_limit=64_000, output_limit=8_192
+        ),
     }
 
     def __post_init__(self):

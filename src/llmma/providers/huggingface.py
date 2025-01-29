@@ -8,6 +8,18 @@ from .base import ModelInfo, SyncProvider
 @dataclass
 class HuggingfaceHubProvider(SyncProvider):
     MODEL_INFO = {
+        "hf_deepseek-r1": ModelInfo(
+            hf_repo="deepseek-ai/DeepSeek-R1",
+            prompt_cost=0,
+            completion_cost=0,
+            context_limit=128_000,
+        ),
+        "hf_deepseek-v3": ModelInfo(
+            hf_repo="deepseek-ai/DeepSeek-V3",
+            prompt_cost=0,
+            completion_cost=0,
+            context_limit=128_000,
+        ),
         "hf_pythia": ModelInfo(
             hf_repo="OpenAssistant/oasst-sft-4-pythia-12b-epoch-3.5",
             prompt_cost=0,

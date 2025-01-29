@@ -9,32 +9,20 @@ from .base import ModelInfo, StreamProvider
 @dataclass
 class AnthropicProvider(StreamProvider):
     MODEL_INFO = {
-        "claude-instant-v1.1": ModelInfo(prompt_cost=1.63, completion_cost=5.51, context_limit=9000),
-        "claude-instant-v1": ModelInfo(prompt_cost=1.63, completion_cost=5.51, context_limit=9000),
-        "claude-v1": ModelInfo(prompt_cost=11.02, completion_cost=32.68, context_limit=9000),
-        "claude-v1-100k": ModelInfo(prompt_cost=11.02, completion_cost=32.68, context_limit=100_000),
-        "claude-instant-1": ModelInfo(prompt_cost=1.63, completion_cost=5.51, context_limit=100_000),
-        "claude-instant-1.2": ModelInfo(
-            prompt_cost=1.63, completion_cost=5.51, context_limit=100_000, output_limit=4_096
-        ),
-        "claude-2.1": ModelInfo(prompt_cost=8.00, completion_cost=24.00, context_limit=200_000, output_limit=4_096),
-        "claude-3-haiku-20240307": ModelInfo(
+        "claude-3-haiku-latest": ModelInfo(
             prompt_cost=0.25, completion_cost=1.25, context_limit=200_000, output_limit=4_096
         ),
-        "claude-3-sonnet-20240229": ModelInfo(
-            prompt_cost=3.00, completion_cost=15, context_limit=200_000, output_limit=4_096
-        ),
-        "claude-3-opus-20240229": ModelInfo(
+        "claude-3-opus-latest": ModelInfo(
             prompt_cost=15.00, completion_cost=75, context_limit=200_000, output_limit=4_096
         ),
-        "claude-3-5-sonnet-20240620": ModelInfo(
-            prompt_cost=3.00, completion_cost=15, context_limit=200_000, output_limit=4_096
+        "claude-3-5-haiku-latest": ModelInfo(
+            prompt_cost=0.25, completion_cost=1.25, context_limit=200_000, output_limit=8_192
         ),
-        "claude-3-5-sonnet-20241022": ModelInfo(
+        "claude-3-sonnet-latest": ModelInfo(
             prompt_cost=3.00, completion_cost=15, context_limit=200_000, output_limit=4_096
         ),
         "claude-3-5-sonnet-latest": ModelInfo(
-            prompt_cost=3.00, completion_cost=15, context_limit=200_000, output_limit=4_096
+            prompt_cost=3.00, completion_cost=15, context_limit=200_000, output_limit=8_192
         ),
     }
 
