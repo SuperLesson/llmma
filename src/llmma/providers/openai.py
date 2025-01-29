@@ -106,7 +106,7 @@ class OpenAIProvider(StreamProvider):
         **kwargs,
     ) -> dict:
         if not kwargs.get("max_completion_tokens") and self.info.quirks.get("use_max_completion_tokens", False):
-            kwargs["max_completion_tokens"] = kwargs.pop("max_tokens", 300)
+            kwargs["max_completion_tokens"] = kwargs.pop("max_tokens", None)
         return kwargs
 
     def complete(self, messages: list[dict], **kwargs) -> dict:
