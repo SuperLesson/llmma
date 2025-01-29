@@ -9,7 +9,6 @@ from .google_genai import GoogleGenAIProvider
 from .groq import GroqProvider
 from .huggingface import HuggingfaceHubProvider
 from .mistral import MistralProvider
-from .ollama import OllamaProvider
 from .openai import OpenAIProvider
 from .openrouter import OpenRouterProvider
 from .reka import RekaProvider
@@ -26,7 +25,6 @@ __all__ = [
     "HuggingfaceHubProvider",
     "OpenAIProvider",
     "MistralProvider",
-    "OllamaProvider",
     "DeepSeekProvider",
     "GroqProvider",
     "RekaProvider",

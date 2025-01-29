@@ -12,13 +12,13 @@ from .providers import (
     GroqProvider,
     HuggingfaceHubProvider,
     MistralProvider,
-    OllamaProvider,
     OpenAIProvider,
     OpenRouterProvider,
     RekaProvider,
     TogetherProvider,
 )
 from .providers.base import Provider
+from .providers.ollama import get_provider
 
 
 @dataclass
@@ -43,10 +43,17 @@ PROVIDERS = {
     "GoogleGenAI": ProviderSpec(GoogleGenAIProvider, "GOOGLE_API_KEY"),
     "Mistral": ProviderSpec(MistralProvider, "MISTRAL_API_KEY"),
     "Google": ProviderSpec(GoogleProvider),
-    "Ollama": ProviderSpec(OllamaProvider),
     "DeepSeek": ProviderSpec(DeepSeekProvider, "DEEPSEEK_API_KEY"),
     "Groq": ProviderSpec(GroqProvider, "GROQ_API_KEY"),
     "Reka": ProviderSpec(RekaProvider, "REKA_API_KEY"),
     "Together": ProviderSpec(TogetherProvider, "TOGETHER_API_KEY"),
     "OpenRouter": ProviderSpec(OpenRouterProvider, "OPENROUTER_API_KEY"),
 }
+
+
+def use_local_provider(
+    host: str = "http://localhost:11434", context_limit: int = 4096, output_limit: int = 2048, **kwargs
+):
+    global PROVIDERS
+    OP = get_provider(host=host, context_limit=context_limit, output_limit=output_limit, **kwargs)
+    PROVIDERS["Ollama"] = ProviderSpec(OP)
