@@ -5,7 +5,7 @@ import tiktoken
 from attrs import define, field
 from openai import AsyncOpenAI, OpenAI
 
-from .base import ModelInfo, StreamProvider, msg_as_str
+from .base import ModelInfo, StreamProvider
 
 
 @define
@@ -17,12 +17,14 @@ class OpenAIProvider(StreamProvider):
             completion_cost=10.0,
             context_limit=128_000,
             output_limit=16_384,
+            limit_per_minute=30_000,
         ),
         "gpt-4o-mini": ModelInfo(
             prompt_cost=0.15,
             completion_cost=0.60,
             context_limit=128_000,
             output_limit=16_384,
+            limit_per_minute=200_000,
         ),
         "o1": ModelInfo(
             prompt_cost=15.0,
@@ -41,6 +43,7 @@ class OpenAIProvider(StreamProvider):
             quirks={
                 "use_max_completion_tokens": True,
             },
+            limit_per_minute=200_000,
         ),
     }
 
@@ -53,23 +56,7 @@ class OpenAIProvider(StreamProvider):
 
     def _count_tokens(self, content: list[dict]) -> int:
         enc = tiktoken.encoding_for_model(self.model)
-        # When field name is present, ChatGPT will ignore the role token.
-        # Adopted from OpenAI cookbook
-        # https://github.com/openai/openai-cookbook/blob/main/examples/How_to_count_tokens_with_tiktoken.ipynb
-        # every message follows <im_start>{role/name}\n{content}<im_end>\n
-        formatting_token_count = 4
-
-        messages = content
-        messages_text = [msg_as_str([message]) for message in messages]
-        tokens = [enc.encode(t, disallowed_special=()) for t in messages_text]
-
-        n_tokens_list = []
-        for token, message in zip(tokens, messages, strict=False):
-            n_tokens = len(token) + formatting_token_count
-            if "name" in message:
-                n_tokens += -1
-            n_tokens_list.append(n_tokens)
-        return sum(n_tokens_list)
+        return sum(len(enc.encode(t["content"])) + 4 for t in content)
 
     def prepare_input(
         self,

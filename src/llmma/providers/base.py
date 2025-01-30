@@ -72,7 +72,7 @@ class ABCResult:
             **self._meta,
         }
 
-    def to_json(self):
+    def to_json(self) -> str:
         model_inputs = self.model_inputs
         # remove https related params
         model_inputs.pop("headers", None)
@@ -146,6 +146,7 @@ class ModelInfo:
     completion_cost: float
     context_limit: int
     output_limit: int | None = None
+    limit_per_minute: int | None = None
     image_input_cost: float | None = None
     hf_repo: str | None = None
     chat: bool = True
@@ -167,14 +168,14 @@ class SyncProvider:
     model: t.Any = field()
     latency: float | None = None
     MODEL_INFO: t.ClassVar[dict[str, ModelInfo]] = {}
-    info: ModelInfo = field(init=False)
+    info: t.Any = field(init=False)
 
     @model.default
-    def _model_factory(self):
+    def _model_factory(self) -> str:
         return list(self.MODEL_INFO.keys())[0]
 
     @info.default
-    def _info_factory(self):
+    def _info_factory(self) -> ModelInfo:
         if self.model not in self.MODEL_INFO:
             warnings.warn(f"no information about cost of the model: {self.model}", UserWarning, stacklevel=2)
             return ModelInfo(
