@@ -27,10 +27,10 @@ class AlephAlphaProvider(AsyncProvider):
             raise Exception(msg)
         self.client = Client(self.api_key, self.host)
         self.async_client = AsyncClient(self.api_key, self.host)
+        self.tokenizer = tiktoken.encoding_for_model("gpt-3.5-turbo")
 
-    def _count_tokens(self, content: list[dict]) -> int:
-        enc = tiktoken.encoding_for_model("gpt-3.5-turbo")
-        return len(enc.encode(msg_as_str(content)))
+    def _count_tokens(self, content: str) -> int:
+        return len(self.tokenizer.encode(content))
 
     @staticmethod
     def prepare_input(

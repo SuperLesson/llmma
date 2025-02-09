@@ -53,10 +53,10 @@ class OpenAIProvider(StreamProvider):
     def __attrs_post_init__(self):
         self.client = OpenAI(api_key=self.api_key)
         self.async_client = AsyncOpenAI(api_key=self.api_key)
+        self.tokenizer = tiktoken.encoding_for_model(self.model)
 
-    def _count_tokens(self, content: list[dict]) -> int:
-        enc = tiktoken.encoding_for_model(self.model)
-        return sum(len(enc.encode(t["content"])) + 4 for t in content)
+    def _count_tokens(self, content: str) -> int:
+        return len(self.tokenizer.encode(content))
 
     def prepare_input(
         self,

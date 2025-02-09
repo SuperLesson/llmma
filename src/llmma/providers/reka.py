@@ -4,7 +4,7 @@ import tiktoken
 from attrs import define, field
 from reka.client import AsyncReka, Reka
 
-from .base import ModelInfo, StreamProvider, msg_as_str
+from .base import ModelInfo, StreamProvider
 
 
 @define
@@ -21,11 +21,11 @@ class RekaProvider(StreamProvider):
     def __attrs_post_init__(self):
         self.client = Reka(api_key=self.api_key)
         self.async_client = AsyncReka(api_key=self.api_key)
+        self.tokenizer = tiktoken.encoding_for_model("gpt-3.5-turbo")
 
-    def _count_tokens(self, content: list[dict]) -> int:
+    def _count_tokens(self, content: str) -> int:
         # Reka uses the same tokenizer as OpenAI
-        enc = tiktoken.encoding_for_model("gpt-3.5-turbo")
-        return sum([len(enc.encode(msg_as_str([message]))) for message in content])
+        return len(self.tokenizer.encode(content))
 
     def complete(self, messages: list[dict], **kwargs) -> dict:
         response = self.client.chat.create(model=self.model, messages=t.cast(t.Any, messages), **kwargs)

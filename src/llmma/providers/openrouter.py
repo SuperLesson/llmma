@@ -4,7 +4,7 @@ import tiktoken
 from attrs import define, field
 from openai import AsyncOpenAI, OpenAI
 
-from .base import ModelInfo, StreamProvider, msg_as_str
+from .base import ModelInfo, StreamProvider
 
 
 @define
@@ -79,21 +79,10 @@ class OpenRouterProvider(StreamProvider):
             api_key=self.api_key,
             base_url="https://openrouter.ai/api/v1",
         )
+        self.tokenizer = tiktoken.encoding_for_model("gpt-3.5-turbo")
 
-    def _count_tokens(self, content: list[dict]) -> int:
-        enc = tiktoken.encoding_for_model("gpt-3.5-turbo")
-        formatting_token_count = 4
-        messages = content
-        messages_text = [msg_as_str([message]) for message in messages]
-        tokens = [enc.encode(t, disallowed_special=()) for t in messages_text]
-
-        n_tokens_list = []
-        for token, message in zip(tokens, messages, strict=False):
-            n_tokens = len(token) + formatting_token_count
-            if "name" in message:
-                n_tokens += -1
-            n_tokens_list.append(n_tokens)
-        return sum(n_tokens_list)
+    def _count_tokens(self, content: str) -> int:
+        return len(self.tokenizer.encode(content))
 
     def prepare_input(
         self,

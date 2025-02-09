@@ -5,7 +5,7 @@ import together
 from attrs import define, field
 from together import AsyncTogether, Together
 
-from .base import ModelInfo, StreamProvider, msg_as_str
+from .base import ModelInfo, StreamProvider
 
 
 @define
@@ -24,11 +24,11 @@ class TogetherProvider(StreamProvider):
     def __attrs_post_init__(self):
         self.client = Together(api_key=self.api_key)
         self.async_client = AsyncTogether(api_key=self.api_key)
+        self.tokenizer = tiktoken.encoding_for_model("gpt-3.5-turbo")
 
-    def _count_tokens(self, content: list[dict]) -> int:
+    def _count_tokens(self, content: str) -> int:
         # Together uses the same tokenizer as OpenAI
-        enc = tiktoken.encoding_for_model("gpt-3.5-turbo")
-        return sum([len(enc.encode(msg_as_str([message]))) for message in content])
+        return len(self.tokenizer.encode(content))
 
     def complete(self, messages: list[dict], **kwargs) -> dict:
         response = t.cast(

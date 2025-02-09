@@ -3,7 +3,7 @@ import typing as t
 import anthropic
 from attrs import define, field
 
-from .base import ModelInfo, StreamProvider
+from .base import ModelInfo, StreamProvider, msg_from_raw
 
 
 @define
@@ -33,10 +33,10 @@ class AnthropicProvider(StreamProvider):
         self.client = anthropic.Anthropic(api_key=self.api_key)
         self.async_client = anthropic.AsyncAnthropic(api_key=self.api_key)
 
-    def _count_tokens(self, content: list[dict]) -> int:
+    def _count_tokens(self, content: str) -> int:
         return self.client.messages.count_tokens(
             model=self.model,
-            messages=t.cast(t.Any, content),
+            messages=t.cast(t.Any, msg_from_raw(content)),
         ).input_tokens
 
     @staticmethod

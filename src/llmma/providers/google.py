@@ -70,7 +70,7 @@ class GoogleProvider(SyncProvider):
 
         vertexai.init()
 
-    def _count_tokens(self, content: list[dict]) -> int:
+    def _count_tokens(self, content: str) -> int:
         raise
 
     @staticmethod

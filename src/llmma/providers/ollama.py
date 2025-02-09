@@ -3,7 +3,7 @@ import typing as t
 from attrs import define, field
 from ollama import AsyncClient, Client
 
-from .base import ModelInfo, StreamProvider, msg_as_str
+from .base import ModelInfo, StreamProvider
 
 
 def get_provider(host: str, context_limit: int = 4096, output_limit: int = 2048, **kwargs) -> type:
@@ -36,11 +36,11 @@ def get_provider(host: str, context_limit: int = 4096, output_limit: int = 2048,
             self.client = Client(host=host, **kwargs)
             self.async_client = AsyncClient(host=host, **kwargs)
 
-        def _count_tokens(self, content: list[dict]) -> int:
+        def _count_tokens(self, content: str) -> int:
             """Estimate token count using simple word-based heuristic"""
             # Rough estimation: split on whitespace
             # TODO: also split on punctuation
-            return len(msg_as_str(content).split())
+            return len(content.split())
 
         def complete(self, messages: list[dict], **kwargs) -> dict:
             try:

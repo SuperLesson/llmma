@@ -29,22 +29,11 @@ class GroqProvider(StreamProvider):
             api_key=self.api_key,
             base_url="https://api.groq.com/openai/v1",
         )
+        self.tokenizer = tiktoken.encoding_for_model("gpt-3.5-turbo")
 
-    def _count_tokens(self, content: list[dict]) -> int:
+    def _count_tokens(self, content: str) -> int:
         # Groq uses the same tokenizer as OpenAI
-        enc = tiktoken.encoding_for_model("gpt-3.5-turbo")
-        formatting_token_count = 4
-        messages = content
-        messages_text = ["".join(message.values()) for message in messages]
-        tokens = [enc.encode(t, disallowed_special=()) for t in messages_text]
-
-        n_tokens_list = []
-        for token, message in zip(tokens, messages, strict=False):
-            n_tokens = len(token) + formatting_token_count
-            if "name" in message:
-                n_tokens += -1
-            n_tokens_list.append(n_tokens)
-        return sum(n_tokens_list)
+        return len(self.tokenizer.encode(content))
 
     def complete(self, messages: list[dict], **kwargs) -> dict:
         response = self.client.chat.completions.create(

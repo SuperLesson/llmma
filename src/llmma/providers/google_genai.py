@@ -39,8 +39,8 @@ class GoogleGenAIProvider(SyncProvider):
             self.client = genai.GenerativeModel(model)  # type: ignore[private-import]
             self.mode = "chat"
 
-    def _count_tokens(self, content: list[dict]) -> int:
-        return self.client.count_tokens(msg_as_str(content)).total_tokens  # type: ignore[private-import]
+    def _count_tokens(self, content: str) -> int:
+        return self.client.count_tokens(content).total_tokens  # type: ignore[private-import]
 
     @staticmethod
     def prepare_input(

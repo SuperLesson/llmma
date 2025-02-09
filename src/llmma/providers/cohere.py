@@ -21,8 +21,8 @@ class CohereProvider(StreamProvider):
         self.client = cohere.Client(api_key)
         self.async_client = cohere.AsyncClient(api_key)
 
-    def _count_tokens(self, content: list[dict]) -> int:
-        return len(self.client.tokenize(text=msg_as_str(content), model=self.model).tokens)
+    def _count_tokens(self, content: str) -> int:
+        return len(self.client.tokenize(text=content, model=self.model).tokens)
 
     def complete(self, messages: list[dict], **kwargs) -> dict:
         return {

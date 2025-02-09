@@ -3,7 +3,7 @@ from ai21.models.chat import ChatMessage
 from ai21.tokenizers import get_tokenizer
 from attrs import define, field
 
-from .base import ModelInfo, SyncProvider, msg_as_str
+from .base import ModelInfo, SyncProvider
 
 
 @define
@@ -18,9 +18,10 @@ class AI21Provider(SyncProvider):
 
     def __attrs_post_init__(self):
         self.client = ai21.AI21Client(self.api_key)
+        self.tokenizer = get_tokenizer(self.model + "-tokenizer")
 
-    def _count_tokens(self, content: list[dict]) -> int:
-        return get_tokenizer(self.model + "-tokenizer").count_tokens(msg_as_str(content))
+    def _count_tokens(self, content: str) -> int:
+        return self.tokenizer.count_tokens(content)
 
     @staticmethod
     def prepare_input(

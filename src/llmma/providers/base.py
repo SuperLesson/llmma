@@ -169,6 +169,7 @@ class SyncProvider:
     latency: float | None = None
     MODEL_INFO: t.ClassVar[dict[str, ModelInfo]] = {}
     info: t.Any = field(init=False)
+    tokenizer: t.Any = field(init=False)
 
     @model.default
     def _model_factory(self) -> str:
@@ -197,11 +198,11 @@ class SyncProvider:
         cost = ((prompt_tokens * self.info.prompt_cost) + (completion_tokens * self.info.completion_cost)) / 1_000_000
         return round(cost, 5)
 
-    def _count_tokens(self, content: list[dict]) -> int:
+    def _count_tokens(self, content: str) -> int:
         raise
 
     def count_tokens(self, content: str | dict | list[dict]) -> int:
-        return self._count_tokens(msg_from_raw(content))
+        return sum(self._count_tokens(c["content"]) for c in msg_from_raw(content))
 
     def complete(self, messages: list[dict], **kwargs) -> dict:
         raise
