@@ -81,28 +81,14 @@ def process_prompts_sequentially(
     model, prompts, evaluator, delay, **kwargs
 ) -> tuple[list[dict], queue.Queue[tuple[int, list[int]]], list[threading.Thread]]:
     evaluation_queue = queue.Queue()
-    results, threads = list(
-        zip(
-            *[
-                r
-                for i, prompt in enumerate(prompts)
-                if (
-                    r := process_prompt(
-                        model,
-                        prompt,
-                        delay,
-                        i,
-                        evaluator,
-                        evaluation_queue,
-                        **kwargs,
-                    )[0]
-                )
-            ],
-            strict=False,
-        )
-    )
-    if not evaluator:
-        threads = []
+    results: list[dict] = []
+    threads: list[threading.Thread] = []
+    for i, prompt in enumerate(prompts):
+        r, t = process_prompt(model, prompt, delay, i, evaluator, evaluation_queue, **kwargs)
+        if r:
+            results.append(r)
+        if t:
+            threads.append(t)
     return results, evaluation_queue, threads
 
 
