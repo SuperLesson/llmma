@@ -3,26 +3,19 @@ import typing as t
 import tiktoken
 import together
 from attrs import define, field
-from together import AsyncTogether, Together
+from together import AsyncTogether
+from together import Together as TogetherAPI
 
-from .base import ModelInfo, StreamProvider
+from ... import provider
 
 
 @define
-class TogetherProvider(StreamProvider):
-    MODEL_INFO = {
-        "meta-llama/Meta-Llama-3.1-405B-Instruct-Turbo": ModelInfo(
-            prompt_cost=5.0,
-            completion_cost=5.0,
-            context_limit=4096,
-        ),
-    }
-
-    client: Together = field(init=False)
+class Together(provider.Stream):
+    client: TogetherAPI = field(init=False)
     async_client: AsyncTogether = field(init=False)
 
     def __attrs_post_init__(self):
-        self.client = Together(api_key=self.api_key)
+        self.client = TogetherAPI(api_key=self.api_key)
         self.async_client = AsyncTogether(api_key=self.api_key)
         self.tokenizer = tiktoken.encoding_for_model("gpt-3.5-turbo")
 

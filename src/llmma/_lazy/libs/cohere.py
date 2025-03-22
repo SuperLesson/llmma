@@ -3,16 +3,11 @@ import typing as t
 import cohere
 from attrs import define, field
 
-from .base import ModelInfo, StreamProvider, msg_as_str
+from ... import provider
 
 
 @define
-class CohereProvider(StreamProvider):
-    MODEL_INFO = {
-        "command": ModelInfo(prompt_cost=15.0, completion_cost=15, context_limit=2048),
-        "command-nightly": ModelInfo(prompt_cost=15.0, completion_cost=15, context_limit=4096),
-    }
-
+class Cohere(provider.Stream):
     client: cohere.Client = field(init=False)
     async_client: cohere.AsyncClient = field(init=False)
 
@@ -28,7 +23,7 @@ class CohereProvider(StreamProvider):
         return {
             "completion": self.client.chat(
                 model=self.model,
-                message=messages[0]["content"] if len(messages) == 1 else msg_as_str(messages),
+                message=messages[0]["content"] if len(messages) == 1 else provider.msg_as_str(messages),
                 **kwargs,
             ).text
         }
@@ -39,7 +34,7 @@ class CohereProvider(StreamProvider):
                 "completion": (
                     await client.chat(
                         model=self.model,
-                        message=messages[0]["content"] if len(messages) == 1 else msg_as_str(messages),
+                        message=messages[0]["content"] if len(messages) == 1 else provider.msg_as_str(messages),
                         **kwargs,
                     )
                 ).text
@@ -48,7 +43,7 @@ class CohereProvider(StreamProvider):
     def complete_stream(self, messages: list[dict], **kwargs) -> t.Iterator[str]:
         for token in self.client.chat_stream(
             model=self.model,
-            message=messages[0]["content"] if len(messages) == 1 else msg_as_str(messages),
+            message=messages[0]["content"] if len(messages) == 1 else provider.msg_as_str(messages),
             **kwargs,
         ):
             yield t.cast(cohere.types.streamed_chat_response.TextGenerationStreamedChatResponse, token).text
@@ -57,7 +52,7 @@ class CohereProvider(StreamProvider):
         async with self.async_client as client:
             async for r in client.chat_stream(
                 model=self.model,
-                message=messages[0]["content"] if len(messages) == 1 else msg_as_str(messages),
+                message=messages[0]["content"] if len(messages) == 1 else provider.msg_as_str(messages),
                 **kwargs,
             ):
                 yield t.cast(cohere.types.streamed_chat_response.TextGenerationStreamedChatResponse, r).text

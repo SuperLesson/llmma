@@ -3,29 +3,11 @@ import typing as t
 import anthropic
 from attrs import define, field
 
-from .base import ModelInfo, StreamProvider, msg_from_raw
+from ... import provider
 
 
 @define
-class AnthropicProvider(StreamProvider):
-    MODEL_INFO = {
-        "claude-3-haiku-latest": ModelInfo(
-            prompt_cost=0.25, completion_cost=1.25, context_limit=200_000, output_limit=4_096
-        ),
-        "claude-3-opus-latest": ModelInfo(
-            prompt_cost=15.00, completion_cost=75, context_limit=200_000, output_limit=4_096
-        ),
-        "claude-3-5-haiku-latest": ModelInfo(
-            prompt_cost=0.25, completion_cost=1.25, context_limit=200_000, output_limit=8_192
-        ),
-        "claude-3-sonnet-latest": ModelInfo(
-            prompt_cost=3.00, completion_cost=15, context_limit=200_000, output_limit=4_096
-        ),
-        "claude-3-5-sonnet-latest": ModelInfo(
-            prompt_cost=3.00, completion_cost=15, context_limit=200_000, output_limit=8_192
-        ),
-    }
-
+class Anthropic(provider.Stream):
     client: anthropic.Anthropic | anthropic.AnthropicBedrock = field(init=False)
     async_client: anthropic.AsyncAnthropic | anthropic.AsyncAnthropicBedrock = field(init=False)
 
@@ -36,7 +18,7 @@ class AnthropicProvider(StreamProvider):
     def _count_tokens(self, content: str) -> int:
         return self.client.messages.count_tokens(
             model=self.model,
-            messages=t.cast(t.Any, msg_from_raw(content)),
+            messages=t.cast(t.Any, provider.msg_from_raw(content)),
         ).input_tokens
 
     @staticmethod

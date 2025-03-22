@@ -11,41 +11,12 @@ from vertexai.language_models import (
     TextGenerationModel,
 )
 
-from .base import ModelInfo, SyncProvider
+from ... import provider
 
 
 @define
-class GoogleProvider(SyncProvider):
+class Google(provider.Sync):
     api_key = ""
-    # cost is per million tokens
-    MODEL_INFO = {
-        # no support for "textembedding-gecko"
-        "chat-bison": ModelInfo(prompt_cost=0.5, completion_cost=0.5, context_limit=0),
-        "text-bison": ModelInfo(prompt_cost=1.0, completion_cost=1.0, context_limit=0),
-        "text-bison-32k": ModelInfo(prompt_cost=1.0, completion_cost=1.0, context_limit=0),
-        "code-bison": ModelInfo(prompt_cost=1.0, completion_cost=1.0, context_limit=0),
-        "code-bison-32k": ModelInfo(prompt_cost=1.0, completion_cost=1.0, context_limit=0),
-        "codechat-bison": ModelInfo(prompt_cost=1.0, completion_cost=1.0, context_limit=0),
-        "codechat-bison-32k": ModelInfo(prompt_cost=1.0, completion_cost=1.0, context_limit=0),
-        "gemini-pro": ModelInfo(prompt_cost=1.0, completion_cost=1.0, context_limit=0),
-        "gemini-1.5-pro-preview-0514": ModelInfo(
-            prompt_cost=0.35,
-            completion_cost=0.53,
-            context_limit=0,
-            quirks={
-                "uses_characters": False,
-            },
-        ),
-        "gemini-1.5-flash-preview-0514": ModelInfo(
-            prompt_cost=0.35,
-            completion_cost=0.53,
-            context_limit=0,
-            quirks={
-                "uses_characters": False,
-            },
-        ),
-    }
-
     client: TextGenerationModel | CodeGenerationModel | CodeChatModel | ChatModel | GenerativeModel = field(init=False)
     prompt_key: str = field(init=False)
 

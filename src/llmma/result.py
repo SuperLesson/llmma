@@ -1,25 +1,9 @@
 import json
-import time
 import typing as t
-import warnings
-from contextlib import contextmanager
 
 from attrs import define, field
 
-
-def msg_from_raw(cont: str | dict | list[dict], role: str = "user") -> list[dict]:
-    if isinstance(cont, str):
-        return [{"content": cont, "role": role}]
-    if isinstance(cont, dict):
-        return [cont]
-    return cont
-
-
-def msg_as_str(cont: list[dict]) -> str:
-    return ";".join([f"{message['role'].capitalize()}: {message['content']}" for message in cont])
-
-
-Provider = t.Union["AsyncProvider", "StreamProvider", "SyncProvider"]
+from .provider import Provider
 
 
 @define
@@ -90,14 +74,14 @@ class ABCResult:
 
 
 @define
-class Result(ABCResult):
+class Chat(ABCResult):
     text: str
     _meta: dict = field(factory=dict)
     function_call: dict = field(factory=dict)
 
 
 @define
-class StreamResult(ABCResult):
+class Stream(ABCResult):
     _stream: t.Iterator
     _streamed_text: list = field(factory=list)
     _meta: dict = field(factory=dict)
@@ -115,7 +99,7 @@ class StreamResult(ABCResult):
 
 
 @define
-class AsyncStreamResult(ABCResult):
+class AStream(ABCResult):
     _stream: t.AsyncIterable
     _stream_exhausted: bool = False
     _streamed_text: list = field(factory=list)
@@ -129,7 +113,7 @@ class AsyncStreamResult(ABCResult):
         self.text = "".join(self._streamed_text)
 
     @property
-    async def stream(self) -> t.AsyncIterator[Result]:
+    async def stream(self) -> t.AsyncIterator[Chat]:
         if not self._stream_exhausted:
             async for item in self._stream:
                 self._streamed_text.append(item)
@@ -138,86 +122,3 @@ class AsyncStreamResult(ABCResult):
         else:
             for r in self._streamed_text:
                 yield r
-
-
-@define
-class ModelInfo:
-    prompt_cost: float
-    completion_cost: float
-    context_limit: int
-    output_limit: int | None = None
-    limit_per_minute: int | None = None
-    image_input_cost: float | None = None
-    hf_repo: str | None = None
-    chat: bool = True
-    local: bool = False
-    quirks: dict[str, t.Any] = field(factory=dict)
-
-    def __attrs_post_init__(self):
-        if self.output_limit is None:
-            self.output_limit = self.context_limit // 2
-
-
-@define
-class SyncProvider:
-    """Base class for all providers.
-    Methods will raise NotImplementedError if they are not overwritten.
-    """
-
-    api_key: str = field(repr=False)
-    model: t.Any = field()
-    latency: float | None = None
-    MODEL_INFO: t.ClassVar[dict[str, ModelInfo]] = {}
-    info: t.Any = field(init=False)
-    tokenizer: t.Any = field(init=False)
-
-    @model.default
-    def _model_factory(self) -> str:
-        return list(self.MODEL_INFO.keys())[0]
-
-    @info.default
-    def _info_factory(self) -> ModelInfo:
-        if self.model not in self.MODEL_INFO:
-            warnings.warn(f"no information about cost of the model: {self.model}", UserWarning, stacklevel=2)
-            return ModelInfo(
-                prompt_cost=1,
-                completion_cost=1,
-                context_limit=4096,
-            )
-        return self.MODEL_INFO[self.model]
-
-    @contextmanager
-    def track_latency(self):
-        start = time.perf_counter()
-        try:
-            yield
-        finally:
-            self.latency = round(time.perf_counter() - start, 2)
-
-    def compute_cost(self, prompt_tokens: int, completion_tokens: int) -> float:
-        cost = ((prompt_tokens * self.info.prompt_cost) + (completion_tokens * self.info.completion_cost)) / 1_000_000
-        return round(cost, 5)
-
-    def _count_tokens(self, content: str) -> int:
-        raise
-
-    def count_tokens(self, content: str | dict | list[dict]) -> int:
-        return sum(self._count_tokens(c["content"]) for c in msg_from_raw(content))
-
-    def complete(self, messages: list[dict], **kwargs) -> dict:
-        raise
-
-
-@define
-class AsyncProvider(SyncProvider):
-    async def acomplete(self, messages: list[dict], **kwargs) -> dict:
-        raise
-
-
-@define
-class StreamProvider(AsyncProvider):
-    def complete_stream(self, messages: list[dict], **kwargs) -> t.Iterator[str]:
-        raise
-
-    def acomplete_stream(self, messages: list[dict], **kwargs) -> t.AsyncIterator[str]:
-        raise

@@ -3,25 +3,12 @@ import os
 from anthropic import AnthropicBedrock, AsyncAnthropicBedrock
 from attrs import define
 
-from .anthropic import AnthropicProvider, ModelInfo
+from .anthropic import Anthropic
 
 
 @define
-class BedrockAnthropicProvider(AnthropicProvider):
+class BedrockAnthropic(Anthropic):
     api_key = ""
-    MODEL_INFO = {
-        "anthropic.claude-v2": ModelInfo(prompt_cost=11.02, completion_cost=32.68, context_limit=100_000),
-        "anthropic.claude-3-haiku-20240307-v1:0": ModelInfo(
-            prompt_cost=0.25, completion_cost=1.25, context_limit=200_000, output_limit=4_096
-        ),
-        "anthropic.claude-3-sonnet-20240229-v1:0": ModelInfo(
-            prompt_cost=3.00, completion_cost=15, context_limit=200_000, output_limit=4_096
-        ),
-        "anthropic.claude-3-5-sonnet-20240620-v1:0": ModelInfo(
-            prompt_cost=3.00, completion_cost=15, context_limit=200_000, output_limit=4_096
-        ),
-    }
-
     aws_access_key: str | None = None
     aws_secret_key: str | None = None
     aws_region: str | None = None

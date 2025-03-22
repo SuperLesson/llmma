@@ -4,18 +4,11 @@ import tiktoken
 from attrs import define, field
 from openai import AsyncOpenAI, OpenAI
 
-from .base import AsyncProvider, ModelInfo
+from ... import provider
 
 
 @define
-class DeepSeekProvider(AsyncProvider):
-    MODEL_INFO = {
-        "deepseek-chat": ModelInfo(prompt_cost=0.14, completion_cost=0.28, context_limit=64_000, output_limit=8_192),
-        "deepseek-reasoner": ModelInfo(
-            prompt_cost=0.14, completion_cost=2.19, context_limit=64_000, output_limit=8_192
-        ),
-    }
-
+class DeepSeek(provider.Async):
     client: OpenAI = field(init=False)
     async_client: AsyncOpenAI = field(init=False)
 

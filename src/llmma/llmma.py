@@ -10,29 +10,21 @@ from logging import getLogger
 from attrs import define, field
 from prettytable import PrettyTable
 
-from ._providers import PROVIDERS, Provider
-from .providers.base import (
-    AsyncProvider,
-    AsyncStreamResult,
-    Result,
-    StreamProvider,
-    StreamResult,
-    SyncProvider,
-    msg_from_raw,
-)
+from . import provider, result
+from ._lazy import PROVIDERS, Spec
 
 LOGGER = getLogger(__name__)
 
 
-SyncAPIResult = list[Result]
-AsyncAPIResult = t.Awaitable[SyncAPIResult]
-APIResult = SyncAPIResult | AsyncAPIResult
+MultiResult = list[result.Chat]
+AMultiResult = t.Awaitable[MultiResult]
+Result = MultiResult | AMultiResult
 
 
 @define
 class LLMMA:
     DEFAULT_MODEL = os.getenv("LLMMA_DEFAULT_MODEL") or "gpt-4o"
-    models: dict[str, Provider] = field(factory=dict)
+    models: dict[str, tuple[provider.Provider, Spec]] = field(factory=dict)
 
     @classmethod
     def default(cls, **kwargs):
@@ -43,61 +35,74 @@ class LLMMA:
             raise Exception(msg) from e
 
     def add_model(self, model: str, api_key: str | None, **kwargs):
-        provider = next((p for p in PROVIDERS.values() if model in p.kind.MODEL_INFO), None)
-        if not provider:
+        p = next((p for p in PROVIDERS.values() if model in p.info), None)
+        if not p:
             msg = f"{model} is not registered"
             raise ValueError(msg)
-        if provider.api_key_name:
-            api_key = api_key or os.getenv(provider.api_key_name)
+        if p.key:
+            api_key = api_key or os.getenv(p.key)
             if not api_key:
-                msg = f"{provider.api_key_name} environment variable is required"
+                msg = f"{p.key} environment variable is required"
                 raise Exception(msg)
 
-        impl = provider.kind(api_key=api_key or "", model=model, **kwargs)
-        self.models[impl.model] = impl
+        impl = p.get_model()(api_key=api_key or "", model=model, info=p.info[model], **kwargs)
+        self.models[impl.model] = (impl, p)
         return self
 
     def add_provider(self, provider_name: str, model: str | None = None, api_key: str | None = None, **kwargs):
         inv_map = {p.casefold().lower(): p for p in PROVIDERS}
         try:
-            provider = PROVIDERS[inv_map[provider_name.casefold().lower()]]
+            p = PROVIDERS[inv_map[provider_name.casefold().lower()]]
         except KeyError as e:
             msg = f"Provider {provider_name} not found among {list(PROVIDERS.keys())}"
             raise ValueError(msg) from e
 
-        if provider.api_key_name:
-            api_key = api_key or os.getenv(provider.api_key_name)
+        if p.key:
+            api_key = api_key or os.getenv(p.key)
             if not api_key:
-                msg = f"{provider.api_key_name} environment variable is required"
+                msg = f"{p.key} environment variable is required"
                 raise Exception(msg)
 
-        impl = provider.kind(api_key=api_key or "", model=model, **kwargs)
-        self.models[impl.model] = impl
+        if not model:
+            model = list(p.info)[0]
+            info = p.info[model]
+        else:
+            info = p.info.get(model)
+            if not info:
+                warnings.warn(f"no information about cost of the model: {model}", UserWarning, stacklevel=2)
+                info = provider.Info(
+                    prompt_cost=1,
+                    completion_cost=1,
+                    context_limit=4096,
+                )
+
+        impl = p.get_model()(api_key=api_key or "", model=model, info=info, **kwargs)
+        self.models[impl.model] = (impl, p)
         return self
 
-    def stream_models(self) -> list[StreamProvider]:
-        return [m for m in self.models.values() if isinstance(m, StreamProvider)]
+    def stream_models(self) -> list[provider.Stream]:
+        return [m for m, _ in self.models.values() if isinstance(m, provider.Stream)]
 
-    def async_models(self) -> list[AsyncProvider]:
-        return [m for m in self.models.values() if isinstance(m, AsyncProvider)]
+    def async_models(self) -> list[provider.Async]:
+        return [m for m, _ in self.models.values() if isinstance(m, provider.Async)]
 
-    def sync_models(self) -> list[SyncProvider]:
-        return list(self.models.values())
+    def sync_models(self) -> list[provider.Sync]:
+        return [p for p, _ in self.models.values()]
 
     def to_list(self, query: str | None = None) -> list[dict[str, t.Any]]:
         return [
             {
-                "provider": provider.__class__.__name__,
+                "provider": p.__class__.__name__,
                 "name": model,
                 "cost": cost,
             }
-            for provider in self.models.values()
-            for model, cost in provider.MODEL_INFO.items()
-            if not query or (query.lower() in model.lower() or query.lower() in provider.__class__.__name__.lower())
+            for p, spec in self.models.values()
+            for model, cost in spec.info.items()
+            if not query or (query.lower() in model.lower() or query.lower() in p.__class__.__name__.lower())
         ]
 
     def count_tokens(self, content: str | list[dict[str, t.Any]]) -> list[int]:
-        return [provider.count_tokens(content) for provider in self.models.values()]
+        return [p.count_tokens(content) for p, _ in self.models.values()]
 
     @staticmethod
     def _prepare_input(
@@ -107,8 +112,8 @@ class LLMMA:
     ) -> list[dict]:
         messages = history or []
         if system_message:
-            messages.extend(msg_from_raw(system_message, "system"))
-        messages.extend(msg_from_raw(prompt))
+            messages.extend(provider.msg_from_raw(system_message, "system"))
+        messages.extend(provider.msg_from_raw(prompt))
         return messages
 
     def complete(
@@ -117,10 +122,10 @@ class LLMMA:
         history: list[dict] | None = None,
         system_message: str | None = None,
         **kwargs: t.Any,
-    ) -> SyncAPIResult:
+    ) -> MultiResult:
         def _wrap(
-            model: SyncProvider,
-        ) -> Result:
+            model: provider.Sync,
+        ) -> result.Chat:
             messages = self._prepare_input(prompt, history, system_message)
             with model.track_latency():
                 response = model.complete(messages, **kwargs)
@@ -129,7 +134,7 @@ class LLMMA:
             function_call = response.pop("function_call", None)
             kwargs["messages"] = messages
 
-            return Result(
+            return result.Chat(
                 text=completion,
                 model_inputs=kwargs,
                 provider=model,
@@ -146,10 +151,10 @@ class LLMMA:
         history: list[dict] | None = None,
         system_message: str | None = None,
         **kwargs: t.Any,
-    ) -> AsyncAPIResult:
+    ) -> AMultiResult:
         async def _wrap(
-            model: AsyncProvider,
-        ) -> Result:
+            model: provider.Async,
+        ) -> result.Chat:
             messages = self._prepare_input(prompt, history, system_message)
             with model.track_latency():
                 response = await model.acomplete(messages, **kwargs)
@@ -158,7 +163,7 @@ class LLMMA:
             function_call = response.pop("function_call", None)
             kwargs["messages"] = messages
 
-            return Result(
+            return result.Chat(
                 text=completion,
                 model_inputs=kwargs,
                 provider=model,
@@ -177,7 +182,7 @@ class LLMMA:
         history: list[dict] | None = None,
         system_message: str | None = None,
         **kwargs: t.Any,
-    ) -> StreamResult:
+    ) -> result.Stream:
         sm = self.stream_models()
         if len(sm) > 1:
             msg = "Streaming is possible only with a single model"
@@ -188,7 +193,7 @@ class LLMMA:
         kwargs["messages"] = messages
 
         # TODO: track latency
-        return StreamResult(
+        return result.Stream(
             stream=model.complete_stream(messages, **kwargs),
             model_inputs=kwargs,
             provider=model,
@@ -200,7 +205,7 @@ class LLMMA:
         history: list[dict] | None = None,
         system_message: str | None = None,
         **kwargs: t.Any,
-    ) -> AsyncStreamResult:
+    ) -> result.AStream:
         sm = self.stream_models()
         if len(sm) > 1:
             msg = "Streaming is possible only with a single model"
@@ -210,7 +215,7 @@ class LLMMA:
         messages = self._prepare_input(prompt, history, system_message)
 
         # TODO: track latency
-        return AsyncStreamResult(
+        return result.AStream(
             _stream=model.acomplete_stream(messages, **kwargs),
             model_inputs=kwargs,
             provider=model,
@@ -234,7 +239,7 @@ class LLMMA:
         with ThreadPoolExecutor() as executor:
             fmap = {
                 executor.submit(bench.process_prompts_sequentially, model, problems, evaluator, delay, **kwargs): model
-                for model in self.models.values()
+                for model, _ in self.models.values()
             }
 
             for future in as_completed(fmap):

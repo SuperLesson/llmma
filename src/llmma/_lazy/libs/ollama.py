@@ -3,10 +3,12 @@ import typing as t
 from attrs import define, field
 from ollama import AsyncClient, Client
 
-from .base import ModelInfo, StreamProvider
+from ... import provider
 
 
-def get_provider(host: str, context_limit: int = 4096, output_limit: int = 2048, **kwargs) -> type:
+def get_provider(
+    host: str, context_limit: int = 4096, output_limit: int = 2048, **kwargs
+) -> tuple[type, dict[str, provider.Info]]:
     model_info = {}
     client = Client(host=host).list()
     models = client.get("models", [])
@@ -17,7 +19,7 @@ def get_provider(host: str, context_limit: int = 4096, output_limit: int = 2048,
     for model in models:
         name = model["model"]
         # Ollama models are free to use locally
-        model_info[name] = ModelInfo(
+        model_info[name] = provider.Info(
             prompt_cost=0.0,
             completion_cost=0.0,
             context_limit=context_limit,
@@ -25,10 +27,8 @@ def get_provider(host: str, context_limit: int = 4096, output_limit: int = 2048,
         )
 
     @define
-    class OllamaProvider(StreamProvider):
+    class Ollama(provider.Stream):
         api_key = ""
-        MODEL_INFO = model_info
-
         client: Client = field(init=False)
         async_client: AsyncClient = field(init=False)
 
@@ -80,4 +80,4 @@ def get_provider(host: str, context_limit: int = 4096, output_limit: int = 2048,
                 if c := chunk["message"]["content"]:
                     yield c
 
-    return OllamaProvider
+    return Ollama, model_info

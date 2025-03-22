@@ -2,24 +2,19 @@ import typing as t
 
 import tiktoken
 from attrs import define, field
-from reka.client import AsyncReka, Reka
+from reka.client import AsyncReka
+from reka.client import Reka as RekaAPI
 
-from .base import ModelInfo, StreamProvider
+from ... import provider
 
 
 @define
-class RekaProvider(StreamProvider):
-    MODEL_INFO = {
-        "reka-core": ModelInfo(prompt_cost=3.0, completion_cost=15.0, context_limit=128000),
-        "reka-edge": ModelInfo(prompt_cost=0.4, completion_cost=1.0, context_limit=128000),
-        "reka-flash": ModelInfo(prompt_cost=0.8, completion_cost=2.0, context_limit=128000),
-    }
-
-    client: Reka = field(init=False)
+class Reka(provider.Stream):
+    client: RekaAPI = field(init=False)
     async_client: AsyncReka = field(init=False)
 
     def __attrs_post_init__(self):
-        self.client = Reka(api_key=self.api_key)
+        self.client = RekaAPI(api_key=self.api_key)
         self.async_client = AsyncReka(api_key=self.api_key)
         self.tokenizer = tiktoken.encoding_for_model("gpt-3.5-turbo")
 

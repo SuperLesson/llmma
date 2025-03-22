@@ -3,55 +3,19 @@ import typing as t
 
 import tiktoken
 from attrs import define, field
-from openai import AsyncOpenAI, OpenAI
+from openai import AsyncOpenAI
+from openai import OpenAI as OpenAIAPI
 
-from .base import ModelInfo, StreamProvider
+from ... import provider
 
 
 @define
-class OpenAIProvider(StreamProvider):
-    # cost is per million tokens
-    MODEL_INFO = {
-        "gpt-4o": ModelInfo(
-            prompt_cost=2.5,
-            completion_cost=10.0,
-            context_limit=128_000,
-            output_limit=16_384,
-            limit_per_minute=30_000,
-        ),
-        "gpt-4o-mini": ModelInfo(
-            prompt_cost=0.15,
-            completion_cost=0.60,
-            context_limit=128_000,
-            output_limit=16_384,
-            limit_per_minute=200_000,
-        ),
-        "o1": ModelInfo(
-            prompt_cost=15.0,
-            completion_cost=60.0,
-            context_limit=200_000,
-            output_limit=100_000,
-            quirks={
-                "use_max_completion_tokens": True,
-            },
-        ),
-        "o1-mini": ModelInfo(
-            prompt_cost=3.0,
-            completion_cost=12.0,
-            context_limit=128_000,
-            output_limit=65_536,
-            quirks={
-                "use_max_completion_tokens": True,
-            },
-            limit_per_minute=200_000,
-        ),
-    }
-
-    client: OpenAI = field(init=False)
+class OpenAI(provider.Stream):
+    client: OpenAIAPI = field(init=False)
     async_client: AsyncOpenAI = field(init=False)
 
     def __attrs_post_init__(self):
-        self.client = OpenAI(api_key=self.api_key)
+        self.client = OpenAIAPI(api_key=self.api_key)
         self.async_client = AsyncOpenAI(api_key=self.api_key)
         self.tokenizer = tiktoken.encoding_for_model(self.model)
 

@@ -2,30 +2,17 @@ import typing as t
 
 import tiktoken
 from attrs import define, field
-from mistralai import Mistral
+from mistralai import Mistral as MistralAPI
 
-from .base import ModelInfo, StreamProvider
+from ... import provider
 
 
 @define
-class MistralProvider(StreamProvider):
-    MODEL_INFO = {
-        "mistral-tiny": ModelInfo(prompt_cost=0.25, completion_cost=0.25, context_limit=32_000),
-        # new endpoint for mistral-tiny, mistral-tiny will be deprecated in ~June 2024
-        "open-mistral-7b": ModelInfo(prompt_cost=0.25, completion_cost=0.25, context_limit=32_000),
-        "mistral-small": ModelInfo(prompt_cost=0.7, completion_cost=0.7, context_limit=32_000),
-        # new endpoint for mistral-small, mistral-small will be deprecated in ~June 2024
-        "open-mixtral-8x7b": ModelInfo(prompt_cost=0.7, completion_cost=0.7, context_limit=32_000),
-        "mistral-small-latest": ModelInfo(prompt_cost=2.0, completion_cost=6.0, context_limit=32_000),
-        "mistral-medium-latest": ModelInfo(prompt_cost=2.7, completion_cost=8.1, context_limit=32_000),
-        "mistral-large-latest": ModelInfo(prompt_cost=3.0, completion_cost=9.0, context_limit=32_000),
-        "open-mistral-nemo": ModelInfo(prompt_cost=0.3, completion_cost=0.3, context_limit=32_000),
-    }
-
-    client: Mistral = field(init=False)
+class Mistral(provider.Stream):
+    client: MistralAPI = field(init=False)
 
     def __attrs_post_init__(self):
-        self.client = Mistral(api_key=self.api_key)
+        self.client = MistralAPI(api_key=self.api_key)
         self.tokenizer = tiktoken.encoding_for_model("gpt-3.5-turbo")
 
     def _count_tokens(self, content: str) -> int:

@@ -4,69 +4,11 @@ import tiktoken
 from attrs import define, field
 from openai import AsyncOpenAI, OpenAI
 
-from .base import ModelInfo, StreamProvider
+from ... import provider
 
 
 @define
-class OpenRouterProvider(StreamProvider):
-    MODEL_INFO = {
-        "nvidia/llama-3.1-nemotron-70b-instruct": ModelInfo(
-            prompt_cost=0.35,
-            completion_cost=0.4,
-            context_limit=131072,
-        ),
-        "x-ai/grok-2": ModelInfo(
-            prompt_cost=5.0,
-            completion_cost=10.0,
-            context_limit=32768,
-        ),
-        "nousresearch/hermes-3-llama-3.1-405b:free": ModelInfo(
-            prompt_cost=0.0,
-            completion_cost=0.0,
-            context_limit=8192,
-        ),
-        "google/gemini-flash-1.5-exp": ModelInfo(
-            prompt_cost=0.0,
-            completion_cost=0.0,
-            context_limit=1000000,
-        ),
-        "liquid/lfm-40b": ModelInfo(
-            prompt_cost=0.0,
-            completion_cost=0.0,
-            context_limit=32768,
-        ),
-        "mistralai/ministral-8b": ModelInfo(
-            prompt_cost=0.1,
-            completion_cost=0.1,
-            context_limit=128000,
-        ),
-        "qwen/qwen-2.5-72b-instruct": ModelInfo(
-            prompt_cost=0.35,
-            completion_cost=0.4,
-            context_limit=131072,
-        ),
-        "x-ai/grok-2-1212": ModelInfo(
-            prompt_cost=2.0,
-            completion_cost=10.0,
-            context_limit=131072,
-        ),
-        "amazon/nova-pro-v1": ModelInfo(
-            prompt_cost=0.8,
-            completion_cost=3.2,
-            context_limit=300000,
-            image_input_cost=1.2,
-        ),
-        "qwen/qwq-32b-preview": ModelInfo(
-            prompt_cost=0.12,
-            completion_cost=0.18,
-            context_limit=32768,
-        ),
-        "mistralai/mistral-large-2411": ModelInfo(
-            prompt_cost=2.0,
-            completion_cost=6.0,
-            context_limit=128000,
-        ),
-    }
+class OpenRouter(provider.Stream):
     client: OpenAI = field(init=False)
     async_client: AsyncOpenAI = field(init=False)
 

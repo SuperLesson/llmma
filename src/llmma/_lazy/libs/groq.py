@@ -4,19 +4,11 @@ import tiktoken
 from attrs import define, field
 from openai import AsyncOpenAI, OpenAI
 
-from .base import ModelInfo, StreamProvider
+from ... import provider
 
 
 @define
-class GroqProvider(StreamProvider):
-    MODEL_INFO = {
-        "llama-3.1-405b-reasoning": ModelInfo(prompt_cost=0.59, completion_cost=0.79, context_limit=131072),
-        "llama-3.1-70b-versatile": ModelInfo(prompt_cost=0.59, completion_cost=0.79, context_limit=131072),
-        "llama-3.1-8b-instant": ModelInfo(prompt_cost=0.05, completion_cost=0.08, context_limit=131072),
-        "gemma2-9b-it": ModelInfo(prompt_cost=0.20, completion_cost=0.20, context_limit=131072),
-        "llama-3.3-70b-versatile": ModelInfo(prompt_cost=0.59, completion_cost=0.79, context_limit=131072),
-    }
-
+class Groq(provider.Stream):
     client: OpenAI = field(init=False)
     async_client: AsyncOpenAI = field(init=False)
 

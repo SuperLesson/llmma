@@ -3,17 +3,12 @@ from ai21.models.chat import ChatMessage
 from ai21.tokenizers import get_tokenizer
 from attrs import define, field
 
-from .base import ModelInfo, SyncProvider
+from ... import provider
 
 
 @define
-class AI21Provider(SyncProvider):
+class AI21(provider.Sync):
     # per million tokens
-    MODEL_INFO = {
-        "j2-grande-instruct": ModelInfo(prompt_cost=10.0, completion_cost=10.0, context_limit=8192),
-        "j2-jumbo-instruct": ModelInfo(prompt_cost=15.0, completion_cost=15.0, context_limit=8192),
-    }
-
     client: ai21.AI21Client = field(init=False)
 
     def __attrs_post_init__(self):

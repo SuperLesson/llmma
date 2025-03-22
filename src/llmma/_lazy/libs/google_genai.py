@@ -6,23 +6,11 @@ import typing as t
 import google.generativeai as genai
 from attrs import define, field
 
-from .base import ModelInfo, SyncProvider, msg_as_str
+from ... import provider
 
 
 @define
-class GoogleGenAIProvider(SyncProvider):
-    # cost is per million tokens
-    MODEL_INFO = {
-        # no support for "textembedding-gecko"
-        "chat-bison-genai": ModelInfo(prompt_cost=0.5, completion_cost=0.5, context_limit=0),
-        "text-bison-genai": ModelInfo(prompt_cost=1.0, completion_cost=1.0, context_limit=0),
-        "gemini-1.5-pro": ModelInfo(prompt_cost=3.5, completion_cost=10.5, context_limit=128000),
-        "gemini-1.5-pro-latest": ModelInfo(prompt_cost=3.5, completion_cost=10.5, context_limit=128000),
-        "gemini-1.5-flash": ModelInfo(prompt_cost=0.075, completion_cost=0.3, context_limit=128000),
-        "gemini-1.5-flash-latest": ModelInfo(prompt_cost=0.075, completion_cost=0.3, context_limit=128000),
-        "gemini-1.5-pro-exp-0801": ModelInfo(prompt_cost=3.5, completion_cost=10.5, context_limit=128000),
-    }
-
+class GoogleGenAI(provider.Sync):
     client: t.Any = field(init=False)
     mode: str = field(init=False)
 
@@ -59,7 +47,7 @@ class GoogleGenAIProvider(SyncProvider):
         response = self.client.generate_content(prompts, **kwargs)  # type: ignore[private-import]
         completion = response.text if self.mode == "chat" else " ".join([r.text for r in response])
 
-        prompt_tokens = len(msg_as_str(messages))
+        prompt_tokens = len(provider.msg_as_str(messages))
         completion_tokens = len(completion)
         cost = ((prompt_tokens * self.info.prompt_cost) + (completion_tokens * self.info.completion_cost)) / 1_000_000
 
