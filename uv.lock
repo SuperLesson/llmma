@@ -1113,31 +1113,53 @@ wheels = [
 name = "llmma"
 source = { editable = "." }
 dependencies = [
-    { name = "ai21" },
-    { name = "aleph-alpha-client" },
-    { name = "anthropic" },
     { name = "attrs" },
     { name = "cattrs" },
-    { name = "cohere" },
-    { name = "google-cloud-aiplatform" },
-    { name = "google-generativeai" },
-    { name = "grpcio" },
-    { name = "huggingface-hub" },
-    { name = "mistralai" },
-    { name = "ollama" },
-    { name = "openai" },
     { name = "prettytable" },
-    { name = "protobuf" },
     { name = "pydantic" },
-    { name = "reka-api" },
     { name = "tiktoken" },
-    { name = "together" },
 ]
 
 [package.optional-dependencies]
+ai21 = [
+    { name = "ai21" },
+]
+aleph-alpha = [
+    { name = "aleph-alpha-client" },
+]
+anthropic = [
+    { name = "anthropic" },
+]
+cohere = [
+    { name = "cohere" },
+]
+google-cloud = [
+    { name = "google-cloud-aiplatform" },
+]
+google-genai = [
+    { name = "google-generativeai" },
+]
+huggingface = [
+    { name = "huggingface-hub" },
+]
 local = [
     { name = "accelerate" },
     { name = "einops" },
+]
+mistral = [
+    { name = "mistralai" },
+]
+ollama = [
+    { name = "ollama" },
+]
+openai = [
+    { name = "openai" },
+]
+reka = [
+    { name = "reka-api" },
+]
+together = [
+    { name = "together" },
 ]
 
 [package.dev-dependencies]
@@ -1149,28 +1171,26 @@ dev = [
 [package.metadata]
 requires-dist = [
     { name = "accelerate", marker = "extra == 'local'" },
-    { name = "ai21", specifier = ">=3.0.1" },
-    { name = "aleph-alpha-client", specifier = ">=10.0.0" },
-    { name = "anthropic", specifier = ">=0.45.0" },
+    { name = "ai21", marker = "extra == 'ai21'", specifier = ">=3.1.0" },
+    { name = "aleph-alpha-client", marker = "extra == 'aleph-alpha'", specifier = ">=10.0.0" },
+    { name = "anthropic", marker = "extra == 'anthropic'", specifier = ">=0.49.0" },
     { name = "attrs", specifier = ">=25.3.0" },
     { name = "cattrs", specifier = ">=24.1.2" },
-    { name = "cohere", specifier = ">=5.14.0" },
+    { name = "cohere", marker = "extra == 'cohere'", specifier = ">=5.14.0" },
     { name = "einops", marker = "extra == 'local'" },
-    { name = "google-cloud-aiplatform", specifier = ">=1.78.0" },
-    { name = "google-generativeai", specifier = ">=0.8.4" },
-    { name = "grpcio", specifier = ">=1.70.0" },
-    { name = "huggingface-hub", specifier = ">=0.27.1" },
-    { name = "mistralai", specifier = ">=1.6.0" },
-    { name = "ollama", specifier = ">=0.4.7" },
-    { name = "openai", specifier = ">=1.68.2" },
+    { name = "google-cloud-aiplatform", marker = "extra == 'google-cloud'", specifier = ">=1.78.0" },
+    { name = "google-generativeai", marker = "extra == 'google-genai'", specifier = ">=0.8.4" },
+    { name = "huggingface-hub", marker = "extra == 'huggingface'", specifier = ">=0.27.1" },
+    { name = "mistralai", marker = "extra == 'mistral'", specifier = ">=1.6.0" },
+    { name = "ollama", marker = "extra == 'ollama'", specifier = ">=0.4.7" },
+    { name = "openai", marker = "extra == 'openai'", specifier = ">=1.68.2" },
     { name = "prettytable", specifier = ">=3.12.0" },
-    { name = "protobuf", specifier = ">=5.29.4" },
     { name = "pydantic", specifier = ">=2.10.6" },
-    { name = "reka-api", specifier = ">=3.2.0" },
+    { name = "reka-api", marker = "extra == 'reka'", specifier = ">=3.2.0" },
     { name = "tiktoken", specifier = ">=0.9.0" },
-    { name = "together", specifier = ">=1.4.6" },
+    { name = "together", marker = "extra == 'together'", specifier = ">=1.4.6" },
 ]
-provides-extras = ["local"]
+provides-extras = ["ai21", "aleph-alpha", "anthropic", "cohere", "google-cloud", "google-genai", "huggingface", "local", "mistral", "ollama", "openai", "reka", "together"]
 
 [package.metadata.requires-dev]
 dev = [
