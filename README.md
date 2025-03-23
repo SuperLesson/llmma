@@ -40,27 +40,32 @@ LLMMA is a minimal Python library to connect to various Language Models (LLMs) w
 ### Basic Usage
 
 ```py
-from llmma import LLMMA
+import llmma
 
-model = LLMMA.default()  # defaults to 'gpt-4o'
+model, spec = llmma.default()  # defaults to 'gpt-4o'
+# spec has provider meta, you can ignore it
 result = model.complete(
     "What is the capital of the country where Mozart was born?",
     temperature=0.1,
     max_tokens=200
-)[0]
+)
 
+# default answer (parsed by llmma)
 print(result.text)
-print(result.meta)
+# as returned by the provider (usually as pydantic.BaseModel)
+print(result.raw)
 ```
 
 ### Multimodel Usage
 
 ```py
-models = LLMMA().add_model('gpt-3.5-turbo').add_model('claude-instant-v1')
-result = models.complete('What is the capital of the country where Mozart was born?')[0]
+models: list[llmma.Provider] = [
+    llmma.by_model('gpt-3.5-turbo')[0],
+    llmma.by_model('claude-instant-v1')[0],
+]
+results = llmma.complete(models, 'What is the capital of the country where Mozart was born?')
 
-print(result.text)
-print(result.meta)
+print(results)
 ```
 
 ### Async Support
@@ -72,8 +77,7 @@ result = await model.acomplete("What is the capital of the country where Mozart 
 ### Streaming Support
 
 ```py
-model = LLMMA().add_model('claude-v1')
-# can only work with a single provider, returns a single stream
+model = llmma.by_model('claude-v1')
 result = model.complete_stream("Write an essay on the Civil War")
 for chunk in result.stream:
    if chunk is not None:
@@ -124,7 +128,7 @@ export LLMMA_DEFAULT_MODEL="gpt-4o"
 Alternatively, you can pass in your API key as keyword args:
 
 ```py
-model = LLMMA.add_model('gpt-4', api_key='your_api_key_here')
+model = llmma.by_model('gpt-4', api_key='your_api_key_here')[0]
 ```
 
 ## Model Benchmarks
@@ -133,13 +137,11 @@ LLMMA includes an automated benchmark system. The quality of models is evaluated
 
 ```py
 bench = ['claude-3-haiku-20240307', 'gpt-4o-mini', 'claude-3-5-sonnet-20240620', 'gpt-4o', 'mistral-large-latest', 'open-mistral-nemo', 'gpt-4', 'gpt-3.5-turbo', 'deepseek-coder', 'deepseek-chat', 'llama-3.1-8b-instant', 'llama-3.1-70b-versatile']
-models = LLMMA()
+models = []
 for m in bench:
-    models.add_model(m)
+    models.append(llmma.by_model(m)[0])
 
-gpt4 = LLMMA.default()
-
-bench.benchmark(evaluator=gpt4)
+llmma.benchmark(models, evaluator=llmma.default()[0])
 ```
 
 ## Supported Models
@@ -149,9 +151,8 @@ To get a full list of supported models:
 ```py
 from llmma import PROVIDERS
 
-providers = PROVIDERS.keys()
-for p in providers:
-    print(p, PROVIDERS[p].supported_models())
+for p, spec in PROVIDERS.values():
+    print(p, spec.info.keys())
 ```
 
 <!-- ## Advanced Usage -->

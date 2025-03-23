@@ -23,51 +23,60 @@ class Together(provider.Stream):
         # Together uses the same tokenizer as OpenAI
         return len(self.tokenizer.encode(content))
 
-    def complete(self, messages: list[dict], **kwargs) -> dict:
-        response = t.cast(
-            together.types.ChatCompletionResponse,
-            self.client.chat.completions.create(model=self.model, messages=messages, stream=False, **kwargs),
+    @staticmethod
+    def _cast(r: together.types.ChatCompletionResponse) -> provider.Result:
+        cs = r.choices
+        assert cs
+        msg = cs[0].message
+        assert msg
+        text = msg.content
+        assert isinstance(text, str)
+        u = r.usage
+        assert u
+        return provider.Result(
+            text,
+            provider.Usage(
+                u.prompt_tokens,
+                u.completion_tokens,
+            ),
+            raw=r,
         )
-        assert response.choices
-        assert response.choices[0].message
-        assert response.usage
-        return {
-            "completion": response.choices[0].message.content,
-            "prompt_tokens": response.usage.prompt_tokens,
-            "completion_tokens": response.usage.completion_tokens,
-        }
 
-    async def acomplete(self, messages: list[dict], **kwargs) -> dict:
-        response = t.cast(
-            together.types.ChatCompletionResponse,
-            await self.async_client.chat.completions.create(model=self.model, messages=messages, **kwargs),
+    def _complete(self, messages: list[dict], **kwargs) -> provider.Result:
+        return self._cast(
+            t.cast(
+                together.types.ChatCompletionResponse,
+                self.client.chat.completions.create(model=self.model, messages=messages, stream=False, **kwargs),
+            )
         )
-        assert response.choices
-        assert response.choices[0].message
-        assert response.usage
-        return {
-            "completion": response.choices[0].message.content,
-            "prompt_tokens": response.usage.prompt_tokens,
-            "completion_tokens": response.usage.completion_tokens,
-        }
 
-    def complete_stream(self, messages: list[dict], **kwargs) -> t.Iterator[str]:
+    async def _acomplete(self, messages: list[dict], **kwargs) -> provider.Result:
+        return self._cast(
+            t.cast(
+                together.types.ChatCompletionResponse,
+                await self.async_client.chat.completions.create(model=self.model, messages=messages, **kwargs),
+            )
+        )
+
+    @staticmethod
+    def _cast_chunk(r: together.types.ChatCompletionChunk) -> provider.Result:
+        cs = r.choices
+        assert cs
+        d = cs[0].delta
+        assert d
+        c = d.content
+        assert c
+        u = r.usage
+        assert u
+        return provider.Result(c, provider.Usage(u.prompt_tokens, u.completion_tokens), r)
+
+    def _complete_stream(self, messages: list[dict], **kwargs) -> t.Iterator[provider.Result]:
         for chunk in self.client.chat.completions.create(model=self.model, messages=messages, stream=True, **kwargs):
-            chunk = t.cast(together.types.ChatCompletionChunk, chunk)
-            assert chunk.choices
-            assert chunk.choices[0].delta
-            s = chunk.choices[0].delta.content
-            assert s
-            yield s
+            yield self._cast_chunk(t.cast(together.types.ChatCompletionChunk, chunk))
 
-    async def acomplete_stream(self, messages: list[dict], **kwargs) -> t.AsyncIterator[str]:
+    async def _acomplete_stream(self, messages: list[dict], **kwargs) -> t.AsyncIterator[provider.Result]:
         async for chunk in t.cast(
             t.AsyncGenerator[together.types.ChatCompletionChunk, None],
             self.async_client.chat.completions.create(model=self.model, messages=messages, stream=True, **kwargs),
         ):
-            chunk = t.cast(together.types.ChatCompletionChunk, chunk)
-            assert chunk.choices
-            assert chunk.choices[0].delta
-            s = chunk.choices[0].delta.content
-            assert s
-            yield s
+            yield self._cast_chunk(t.cast(together.types.ChatCompletionChunk, chunk))

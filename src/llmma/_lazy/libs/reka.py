@@ -22,30 +22,56 @@ class Reka(provider.Stream):
         # Reka uses the same tokenizer as OpenAI
         return len(self.tokenizer.encode(content))
 
-    def complete(self, messages: list[dict], **kwargs) -> dict:
-        response = self.client.chat.create(model=self.model, messages=t.cast(t.Any, messages), **kwargs)
-        return {
-            "completion": t.cast(str, response.responses[0].message.content),
-            "prompt_tokens": response.usage.input_tokens,
-            "completion_tokens": response.usage.output_tokens,
-            "latency": self.latency,
-        }
+    def _complete(self, messages: list[dict], **kwargs) -> provider.Result:
+        r = self.client.chat.create(model=self.model, messages=t.cast(t.Any, messages), **kwargs)
+        c = r.responses[0].message.content
+        assert isinstance(c, str)
+        return provider.Result(
+            c,
+            provider.Usage(
+                r.usage.input_tokens,
+                r.usage.output_tokens,
+            ),
+            r,
+        )
 
-    async def acomplete(self, messages: list[dict], **kwargs) -> dict:
-        response = await self.async_client.chat.create(model=self.model, messages=t.cast(t.Any, messages), **kwargs)
-        return {
-            "completion": t.cast(str, response.responses[0].message.content),
-            "prompt_tokens": response.usage.input_tokens,
-            "completion_tokens": response.usage.output_tokens,
-            "latency": self.latency,
-        }
+    async def _acomplete(self, messages: list[dict], **kwargs) -> provider.Result:
+        r = await self.async_client.chat.create(model=self.model, messages=t.cast(t.Any, messages), **kwargs)
+        c = r.responses[0].message.content
+        assert isinstance(c, str)
+        return provider.Result(
+            c,
+            provider.Usage(
+                r.usage.input_tokens,
+                r.usage.output_tokens,
+            ),
+            r,
+        )
 
-    def complete_stream(self, messages: list[dict], **kwargs) -> t.Iterator[str]:
+    def _complete_stream(self, messages: list[dict], **kwargs) -> t.Iterator[provider.Result]:
         for r in self.client.chat.create_stream(model=self.model, messages=t.cast(t.Any, messages), **kwargs):
-            yield t.cast(str, r.responses[0].chunk.content)
+            c = t.cast(str, r.responses[0].chunk.content)
+            assert isinstance(c, str)
+            yield provider.Result(
+                c,
+                provider.Usage(
+                    r.usage.input_tokens,
+                    r.usage.output_tokens,
+                ),
+                r,
+            )
 
-    async def acomplete_stream(self, messages: list[dict], **kwargs) -> t.AsyncIterator[str]:
-        async for chunk in self.async_client.chat.create_stream(
+    async def _acomplete_stream(self, messages: list[dict], **kwargs) -> t.AsyncIterator[provider.Result]:
+        async for r in self.async_client.chat.create_stream(
             model=self.model, messages=t.cast(t.Any, messages), **kwargs
         ):
-            yield t.cast(str, chunk.responses[0].chunk.content)
+            c = t.cast(str, r.responses[0].chunk.content)
+            assert isinstance(c, str)
+            yield provider.Result(
+                c,
+                provider.Usage(
+                    r.usage.input_tokens,
+                    r.usage.output_tokens,
+                ),
+                r,
+            )

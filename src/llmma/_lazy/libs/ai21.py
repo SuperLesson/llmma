@@ -26,15 +26,17 @@ class AI21(provider.Sync):
             kwargs["maxTokens"] = max_tokens
         return kwargs
 
-    def complete(self, messages: list[dict], **kwargs) -> dict:
+    def _complete(self, messages: list[dict], **kwargs) -> provider.Result:
         data = self.prepare_input(**kwargs)
-        response = self.client.chat.completions.create(
+        r = self.client.chat.completions.create(
             model=self.model, messages=[ChatMessage(**ms) for ms in messages], stream=False, **data
         )
-        return {
-            "completion": response.choices[0].message.content,
-            "prompt_tokens": response.usage.prompt_tokens,
-            "completion_tokens": response.usage.completion_tokens,
-        }
+        text = r.choices[0].message.content
+        assert text
+        return provider.Result(
+            text,
+            provider.Usage(r.usage.prompt_tokens, r.usage.completion_tokens),
+            r,
+        )
 
     # TODO: async and stream support

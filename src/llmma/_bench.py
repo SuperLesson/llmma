@@ -3,8 +3,10 @@ import re
 import threading
 import time
 
+from . import provider
 
-def evaluate_answers(evaluator, query_answer_pairs: list[tuple[str, str, str]]) -> list[int]:
+
+def evaluate_answers(evaluator: provider.Provider, query_answer_pairs: list[tuple[str, str, str]]) -> list[int]:
     system = """You are an evaluator for an AI system. Your task is to determine whether the AI's answer matches the correct answer. You will be given two inputs: the AI's answer and the correct answer. Your job is to compare these and output a binary score: 1 if the AI's answer is correct, and 0 if it is not.
 
 To evaluate the AI's performance:
@@ -49,7 +51,13 @@ Here is the correct answer:
 
 
 def process_prompt(
-    model, prompt, delay, index, evaluator, evaluation_queue, **kwargs
+    model: provider.Provider,
+    prompt: tuple[str, str],
+    delay: float,
+    index: int,
+    evaluator: provider.Provider | None,
+    evaluation_queue: queue.Queue[tuple[int, list[int]]],
+    **kwargs,
 ) -> tuple[dict | None, threading.Thread | None]:
     try:
         result = model.complete(prompt[0], max_tokens=1000, temperature=0, **kwargs)
@@ -57,9 +65,9 @@ def process_prompt(
             time.sleep(delay)
         output_data = {
             "text": result.text,
-            "tokens": result.meta["completion_tokens"],
-            "latency": result.meta["latency"],
-            "cost": result.meta["cost"],
+            "tokens": result.usage.completion_tokens,
+            "latency": result.latency,
+            "cost": model.cost(result.usage),
         }
     except Exception as e:
         print(f"Error with {model}: {str(e)}")
@@ -78,7 +86,11 @@ def process_prompt(
 
 
 def process_prompts_sequentially(
-    model, prompts, evaluator, delay, **kwargs
+    model: provider.Provider,
+    prompts: list[tuple[str, str]],
+    evaluator: provider.Provider | None,
+    delay: float,
+    **kwargs,
 ) -> tuple[list[dict], queue.Queue[tuple[int, list[int]]], list[threading.Thread]]:
     evaluation_queue = queue.Queue()
     results: list[dict] = []

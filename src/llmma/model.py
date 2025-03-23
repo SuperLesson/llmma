@@ -4,7 +4,7 @@ from attrs import define, field
 
 
 @define
-class ProviderInfo:
+class Info:
     prompt_cost: float
     completion_cost: float
     context_limit: int
@@ -19,3 +19,9 @@ class ProviderInfo:
     def __attrs_post_init__(self):
         if self.output_limit is None:
             self.output_limit = self.context_limit // 2
+
+
+@define
+class Usage:
+    prompt_tokens: int
+    completion_tokens: int

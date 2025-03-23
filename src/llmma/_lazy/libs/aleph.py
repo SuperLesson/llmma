@@ -1,5 +1,4 @@
 import os
-import typing as t
 
 import tiktoken
 from aleph_alpha_client import AsyncClient, Client, CompletionRequest, Prompt
@@ -39,19 +38,29 @@ class AlephAlpha(provider.Async):
             **kwargs,
         )
 
-    def complete(self, messages: list[dict], **kwargs) -> dict:
-        response = self.client.complete(request=self.prepare_input(messages, **kwargs), model=self.model)
-        return {
-            "completion": t.cast(str, response.completions[0].completion),
-            "prompt_tokens": response.num_tokens_prompt_total,
-            "completion_tokens": response.num_tokens_generated,
-        }
+    def _complete(self, messages: list[dict], **kwargs) -> provider.Result:
+        r = self.client.complete(request=self.prepare_input(messages, **kwargs), model=self.model)
+        text = r.completions[0].completion
+        assert text
+        return provider.Result(
+            text,
+            provider.Usage(
+                r.num_tokens_prompt_total,
+                r.num_tokens_generated,
+            ),
+            dict(r._asdict()),
+        )
 
-    async def acomplete(self, messages: list[dict], **kwargs) -> dict:
+    async def _acomplete(self, messages: list[dict], **kwargs) -> provider.Result:
         async with self.async_client as client:
-            response = await client.complete(request=self.prepare_input(messages, **kwargs), model=self.model)
-        return {
-            "completion": t.cast(str, response.completions[0].completion),
-            "prompt_tokens": response.num_tokens_prompt_total,
-            "completion_tokens": response.num_tokens_generated,
-        }
+            r = await client.complete(request=self.prepare_input(messages, **kwargs), model=self.model)
+        text = r.completions[0].completion
+        assert text
+        return provider.Result(
+            text,
+            provider.Usage(
+                r.num_tokens_prompt_total,
+                r.num_tokens_generated,
+            ),
+            dict(r._asdict()),
+        )

@@ -3,6 +3,7 @@ import math
 
 import vertexai
 from attrs import define, field
+from cattrs import unstructure
 from vertexai.generative_models import GenerativeModel
 from vertexai.language_models import (
     ChatModel,
@@ -52,40 +53,38 @@ class Google(provider.Sync):
             kwargs["max_output_tokens"] = max_tokens
         return kwargs
 
-    def complete(self, messages: list[dict], **kwargs) -> dict:
+    def _complete(self, messages: list[dict], **kwargs) -> provider.Result:
         kwargs = self.prepare_input(**kwargs)
         prompt = kwargs.pop(self.prompt_key, None) or messages[0]["content"]
         if isinstance(self.client, GenerativeModel):
             chat = self.client.start_chat()
-            response = chat.send_message([prompt], generation_config=kwargs)
+            r = chat.send_message([prompt], generation_config=kwargs)
         elif isinstance(self.client, ChatModel | CodeChatModel):
             chat = self.client.start_chat()
-            response = chat.send_message(**kwargs)
+            r = chat.send_message(**kwargs).candidates[0]
         else:  # text / code
-            response = self.client.predict(**kwargs)
+            r = self.client.predict(**kwargs)
+            if hasattr(r, "candidates"):
+                r = r.candidates[0]  # type: ignore
 
-        completion = response.text or ""
+        c = r.text or ""
 
-        # Calculate tokens and cost
         if self.info.quirks.get("uses_characters", True):
             prompt_tokens = len(prompt)
-            completion_tokens = len(completion)
+            completion_tokens = len(c)
         else:
-            prompt_tokens = len(prompt) / 4
-            completion_tokens = len(completion) / 4
-
-        cost = ((prompt_tokens * self.info.prompt_cost) + (completion_tokens * self.info.completion_cost)) / 1_000_000
+            prompt_tokens = len(prompt) // 4
+            completion_tokens = len(c) // 4
 
         if not self.info.quirks.get("uses_characters", True):
-            prompt_tokens = math.ceil((prompt_tokens + 1) / 4)
-            completion_tokens = math.ceil((completion_tokens + 1) / 4)
-        total_tokens = prompt_tokens + completion_tokens
+            prompt_tokens = int(math.ceil((prompt_tokens + 1) / 4))
+            completion_tokens = int(math.ceil((completion_tokens + 1) / 4))
 
-        return {
-            "completion": completion,
-            "model": self.model,
-            "tokens": total_tokens,
-            "prompt_tokens": prompt_tokens,
-            "completion_tokens": completion_tokens,
-            "cost": cost,
-        }
+        return provider.Result(
+            c,
+            provider.Usage(
+                prompt_tokens,
+                completion_tokens,
+            ),
+            unstructure(r, dict),
+        )

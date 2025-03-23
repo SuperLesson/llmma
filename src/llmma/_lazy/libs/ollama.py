@@ -42,42 +42,82 @@ def get_provider(
             # TODO: also split on punctuation
             return len(content.split())
 
-        def complete(self, messages: list[dict], **kwargs) -> dict:
+        def _complete(self, messages: list[dict], **kwargs) -> provider.Result:
             try:
-                response = self.client.chat(model=self.model, messages=messages, stream=False, **kwargs)
+                r = self.client.chat(model=self.model, messages=messages, stream=False, **kwargs)
             except Exception as e:
                 msg = f"Ollama completion failed: {str(e)}"
                 raise RuntimeError(msg) from e
 
-            return {
-                "completion": response.message.content,
-                "prompt_tokens": response.prompt_eval_count,
-                "completion_tokens": response.eval_count,
-            }
+            c = r.message.content
+            assert c
+            pt = r.prompt_eval_count
+            assert pt
+            ct = r.eval_count
+            assert ct
+            return provider.Result(
+                c,
+                provider.Usage(
+                    pt,
+                    ct,
+                ),
+                r,
+            )
 
-        async def acomplete(self, messages: list[dict], **kwargs) -> dict:
+        async def _acomplete(self, messages: list[dict], **kwargs) -> provider.Result:
             try:
-                response = await self.async_client.chat(model=self.model, messages=messages, stream=False, **kwargs)
+                r = await self.async_client.chat(model=self.model, messages=messages, stream=False, **kwargs)
             except Exception as e:
                 msg = f"Ollama completion failed: {str(e)}"
                 raise RuntimeError(msg) from e
 
-            return {
-                "completion": response.message.content,
-                "prompt_tokens": response.prompt_eval_count,
-                "completion_tokens": response.eval_count,
-            }
+            c = r.message.content
+            assert c
+            pt = r.prompt_eval_count
+            assert pt
+            ct = r.eval_count
+            assert ct
+            return provider.Result(
+                c,
+                provider.Usage(
+                    pt,
+                    ct,
+                ),
+                r,
+            )
 
-        def complete_stream(self, messages: list[dict], **kwargs) -> t.Iterator[str]:
-            for chunk in self.client.chat(model=self.model, messages=messages, stream=True, **kwargs):
-                if c := chunk["message"]["content"]:
-                    yield c
+        def _complete_stream(self, messages: list[dict], **kwargs) -> t.Iterator[provider.Result]:
+            for r in self.client.chat(model=self.model, messages=messages, stream=True, **kwargs):
+                c = r.message.content
+                assert c
+                pt = r.prompt_eval_count
+                assert pt
+                ct = r.eval_count
+                assert ct
+                yield provider.Result(
+                    c,
+                    provider.Usage(
+                        pt,
+                        ct,
+                    ),
+                    r,
+                )
 
-        async def acomplete_stream(self, messages: list[dict], **kwargs) -> t.AsyncIterator[str]:
-            async for chunk in await self.async_client.chat(
-                model=self.model, messages=messages, stream=True, **kwargs
-            ):
-                if c := chunk["message"]["content"]:
-                    yield c
+        async def _acomplete_stream(self, messages: list[dict], **kwargs) -> t.AsyncIterator[provider.Result]:
+            async for r in await self.async_client.chat(model=self.model, messages=messages, stream=True, **kwargs):
+                c = r.message.content
+                assert c
+                pt = r.prompt_eval_count
+                assert pt
+                ct = r.eval_count
+                assert ct
+                yield provider.Result(
+                    c,
+                    provider.Usage(
+                        pt,
+                        ct,
+                    ),
+                    r,
+                )
 
     return Ollama, model_info

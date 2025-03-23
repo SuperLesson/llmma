@@ -14,10 +14,13 @@ class Huggingface(provider.Sync):
     def _count_tokens(self, content: str) -> int:
         raise
 
-    def complete(self, messages: list[dict], **kwargs) -> dict:
-        response = self.client.chat_completion(messages=messages, **kwargs)
-        return {
-            "completion": response.choices[0].message,
-            "prompt_tokens": response.usage.prompt_tokens,
-            "completion_tokens": response.usage.completion_tokens,
-        }
+    def _complete(self, messages: list[dict], **kwargs) -> provider.Result:
+        r = self.client.chat_completion(messages=messages, **kwargs)
+        return provider.Result(
+            r.choices[0].message,
+            provider.Usage(
+                r.usage.prompt_tokens,
+                r.usage.completion_tokens,
+            ),
+            r,
+        )

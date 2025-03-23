@@ -10,7 +10,7 @@ ollama = LazyLoader("llmma.ollama", globals(), "llmma._lazy.libs.ollama")
 
 @define
 class Spec:
-    get_model: t.Callable[[], provider.Provider]
+    get_model: t.Callable[[], type[provider.Provider]]
     info: dict[str, provider.Info]
     key: str | None = None
 

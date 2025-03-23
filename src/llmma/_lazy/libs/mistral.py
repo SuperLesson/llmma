@@ -20,41 +20,75 @@ class Mistral(provider.Stream):
         # use gpt 3.5 turbo for estimation now
         return len(self.tokenizer.encode(content))
 
-    def complete(self, messages: list[dict], **kwargs) -> dict:
+    def _complete(self, messages: list[dict], **kwargs) -> provider.Result:
         with self.client as client:
-            response = client.chat.complete(model=self.model, messages=t.cast(t.Any, messages), **kwargs)
-        assert response.choices
-        return {
-            "completion": response.choices[0].message.content,
-            "prompt_tokens": response.usage.prompt_tokens,
-            "completion_tokens": response.usage.completion_tokens,
-        }
+            r = client.chat.complete(model=self.model, messages=t.cast(t.Any, messages), **kwargs)
+        cs = r.choices
+        assert cs
+        c = cs[0].message.content
+        assert isinstance(c, str)
+        return provider.Result(
+            c,
+            provider.Usage(
+                r.usage.prompt_tokens,
+                r.usage.completion_tokens,
+            ),
+            r,
+        )
 
-    async def acomplete(self, messages: list[dict], **kwargs) -> dict:
+    async def _acomplete(self, messages: list[dict], **kwargs) -> provider.Result:
         async with self.client as client:
-            response = await client.chat.complete_async(model=self.model, messages=t.cast(t.Any, messages), **kwargs)
-        assert response.choices
-        return {
-            "completion": response.choices[0].message.content,
-            "prompt_tokens": response.usage.prompt_tokens,
-            "completion_tokens": response.usage.completion_tokens,
-        }
+            r = await client.chat.complete_async(model=self.model, messages=t.cast(t.Any, messages), **kwargs)
+        cs = r.choices
+        assert cs
+        c = cs[0].message.content
+        assert isinstance(c, str)
+        return provider.Result(
+            c,
+            provider.Usage(
+                r.usage.prompt_tokens,
+                r.usage.completion_tokens,
+            ),
+            r,
+        )
 
-    def complete_stream(self, messages: list[dict], **kwargs) -> t.Iterator[str]:
+    def _complete_stream(self, messages: list[dict], **kwargs) -> t.Iterator[provider.Result]:
         with (
             self.client as client,
             client.chat.stream(model=self.model, messages=t.cast(t.Any, messages), **kwargs) as stream,
         ):
-            for chunk in stream:
-                assert chunk.data.choices
-                if c := chunk.data.choices[0].delta.content:
-                    yield t.cast(str, c)
+            for r in stream:
+                cs = r.data.choices
+                assert cs
+                c = cs[0].delta.content
+                assert isinstance(c, str)
+                u = r.data.usage
+                assert u
+                yield provider.Result(
+                    c,
+                    provider.Usage(
+                        u.prompt_tokens,
+                        u.completion_tokens,
+                    ),
+                    r,
+                )
 
-    async def acomplete_stream(self, messages: list[dict], **kwargs) -> t.AsyncIterator[str]:
+    async def _acomplete_stream(self, messages: list[dict], **kwargs) -> t.AsyncIterator[provider.Result]:
         async with self.client as client:
-            async for chunk in await client.chat.stream_async(
+            async for r in await client.chat.stream_async(
                 model=self.model, messages=t.cast(t.Any, messages), **kwargs
             ):
-                assert chunk.data.choices
-                if c := chunk.data.choices[0].delta.content:
-                    yield t.cast(str, c)
+                cs = r.data.choices
+                assert cs
+                c = cs[0].delta.content
+                assert isinstance(c, str)
+                u = r.data.usage
+                assert u
+                yield provider.Result(
+                    c,
+                    provider.Usage(
+                        u.prompt_tokens,
+                        u.completion_tokens,
+                    ),
+                    r,
+                )

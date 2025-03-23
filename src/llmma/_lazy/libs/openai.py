@@ -1,4 +1,3 @@
-import json
 import typing as t
 
 import tiktoken
@@ -30,54 +29,46 @@ class OpenAI(provider.Stream):
             kwargs["max_completion_tokens"] = kwargs.pop("max_tokens", None)
         return kwargs
 
-    def complete(self, messages: list[dict], **kwargs) -> dict:
+    def _complete(self, messages: list[dict], **kwargs) -> provider.Result:
         kwargs = self.prepare_input(**kwargs)
-        response = self.client.chat.completions.create(
+        r = self.client.chat.completions.create(
             model=self.model, messages=t.cast(t.Any, messages), stream=False, **kwargs
         )
-        if response.choices[0].message.function_call:
-            function_call = {
-                "name": response.choices[0].message.function_call.name,
-                "arguments": json.loads(response.choices[0].message.function_call.arguments),
-            }
-            completion = ""
-        else:
-            function_call = {}
-            completion = response.choices[0].message.content
+        c = r.choices[0].message.content
+        assert c
+        u = r.usage
+        assert u
+        return provider.Result(c, provider.Usage(u.prompt_tokens, u.completion_tokens), r)
 
-        assert response.usage
-        return {
-            "completion": completion,
-            "function_call": function_call,
-            "prompt_tokens": response.usage.prompt_tokens,
-            "completion_tokens": response.usage.completion_tokens,
-        }
-
-    async def acomplete(self, messages: list[dict], **kwargs) -> dict:
+    async def _acomplete(self, messages: list[dict], **kwargs) -> provider.Result:
         kwargs = self.prepare_input(**kwargs)
-        response = await self.async_client.chat.completions.create(
+        r = await self.async_client.chat.completions.create(
             model=self.model, messages=t.cast(t.Any, messages), stream=False, **kwargs
         )
+        c = r.choices[0].message.content
+        assert c
+        u = r.usage
+        assert u
+        return provider.Result(c, provider.Usage(u.prompt_tokens, u.completion_tokens), r)
 
-        assert response.usage
-        return {
-            "completion": response.choices[0].message.content,
-            "prompt_tokens": response.usage.prompt_tokens,
-            "completion_tokens": response.usage.completion_tokens,
-        }
-
-    def complete_stream(self, messages: list[dict], **kwargs) -> t.Iterator[str]:
+    def _complete_stream(self, messages: list[dict], **kwargs) -> t.Iterator[provider.Result]:
         kwargs = self.prepare_input(**kwargs)
-        for chunk in self.client.chat.completions.create(
+        for r in self.client.chat.completions.create(
             model=self.model, messages=t.cast(t.Any, messages), stream=True, **kwargs
         ):
-            if c := chunk.choices[0].delta.content:
-                yield c
+            c = r.choices[0].delta.content
+            assert c
+            u = r.usage
+            assert u
+            yield provider.Result(c, provider.Usage(u.prompt_tokens, u.completion_tokens), r)
 
-    async def acomplete_stream(self, messages: list[dict], **kwargs) -> t.AsyncIterator[str]:
+    async def _acomplete_stream(self, messages: list[dict], **kwargs) -> t.AsyncIterator[provider.Result]:
         kwargs = self.prepare_input(**kwargs)
-        async for chunk in await self.async_client.chat.completions.create(
+        async for r in await self.async_client.chat.completions.create(
             model=self.model, messages=t.cast(t.Any, messages), stream=True, **kwargs
         ):
-            if c := chunk.choices[0].delta.content:
-                yield c
+            c = r.choices[0].delta.content
+            assert c
+            u = r.usage
+            assert u
+            yield provider.Result(c, provider.Usage(u.prompt_tokens, u.completion_tokens), r)

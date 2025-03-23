@@ -29,49 +29,52 @@ class Anthropic(provider.Stream):
         messages = [m for m in messages if m["role"] != "system"]
         return messages, system
 
-    def complete(self, messages: list[dict], **kwargs) -> dict:
+    def _complete(self, messages: list[dict], **kwargs) -> provider.Result:
         messages, system = self._prepare_messages(messages)
-        response = self.client.messages.create(
+        r = self.client.messages.create(
             model=self.model,
             messages=t.cast(t.Any, messages),
             system=system or anthropic.NOT_GIVEN,
             stream=False,
             **kwargs,
         )
-        assert response.content[0].type == "text"
-        return {
-            "completion": response.content[0].text,
-            "prompt_tokens": response.usage.input_tokens,
-            "completion_tokens": response.usage.output_tokens,
-        }
+        c = r.content[0]
+        assert c.type == "text"
+        return provider.Result(c.text, provider.Usage(r.usage.input_tokens, r.usage.output_tokens), r)
 
-    async def acomplete(self, messages: list[dict], **kwargs) -> dict:
+    async def _acomplete(self, messages: list[dict], **kwargs) -> provider.Result:
         messages, system = self._prepare_messages(messages)
-        response = await self.async_client.messages.create(
+        r = await self.async_client.messages.create(
             model=self.model,
             messages=t.cast(t.Any, messages),
             system=system or anthropic.NOT_GIVEN,
             stream=False,
             **kwargs,
         )
-        assert response.content[0].type == "text"
-        return {
-            "completion": response.content[0].text,
-            "prompt_tokens": response.usage.input_tokens,
-            "completion_tokens": response.usage.output_tokens,
-        }
+        c = r.content[0]
+        assert c.type == "text"
+        return provider.Result(c.text, provider.Usage(r.usage.input_tokens, r.usage.output_tokens), r)
 
-    def complete_stream(self, messages: list[dict], **kwargs) -> t.Iterator[str]:
+    def _complete_stream(self, messages: list[dict], **kwargs) -> t.Iterator[provider.Result]:
         messages, system = self._prepare_messages(messages)
         with self.client.messages.stream(
             model=self.model, messages=t.cast(t.Any, messages), system=system or anthropic.NOT_GIVEN, **kwargs
         ) as stream_manager:
-            yield from stream_manager.text_stream
+            for e in stream_manager:
+                if e.type == "message_stop":
+                    r = e.message
+                    c = r.content[0]
+                    assert c.type == "text"
+                    yield provider.Result(c.text, provider.Usage(r.usage.input_tokens, r.usage.output_tokens), r)
 
-    async def acomplete_stream(self, messages: list[dict], **kwargs) -> t.AsyncIterator[str]:
+    async def _acomplete_stream(self, messages: list[dict], **kwargs) -> t.AsyncIterator[provider.Result]:
         messages, system = self._prepare_messages(messages)
         async with self.async_client.messages.stream(
             model=self.model, messages=t.cast(t.Any, messages), system=system or anthropic.NOT_GIVEN, **kwargs
         ) as stream_manager:
-            async for text in stream_manager.text_stream:
-                yield text
+            async for e in stream_manager:
+                if e.type == "message_stop":
+                    r = e.message
+                    c = r.content[0]
+                    assert c.type == "text"
+                    yield provider.Result(c.text, provider.Usage(r.usage.input_tokens, r.usage.output_tokens), r)

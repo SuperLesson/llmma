@@ -27,24 +27,22 @@ class DeepSeek(provider.Async):
         # DeepSeek uses the same tokenizer as OpenAI
         return len(self.tokenizer.encode(content))
 
-    def complete(self, messages: list[dict], **kwargs) -> dict:
-        response = self.client.chat.completions.create(
+    def _complete(self, messages: list[dict], **kwargs) -> provider.Result:
+        r = self.client.chat.completions.create(
             model=self.model, stream=False, messages=t.cast(t.Any, messages), **kwargs
         )
-        assert response.usage
-        return {
-            "completion": response.choices[0].message.content,
-            "prompt_tokens": response.usage.prompt_tokens,
-            "completion_tokens": response.usage.completion_tokens,
-        }
+        u = r.usage
+        assert u
+        c = r.choices[0].message.content
+        assert c
+        return provider.Result(c, provider.Usage(u.prompt_tokens, u.completion_tokens), r)
 
-    async def acomplete(self, messages: list[dict], **kwargs) -> dict:
-        response = await self.async_client.chat.completions.create(
+    async def _acomplete(self, messages: list[dict], **kwargs) -> provider.Result:
+        r = await self.async_client.chat.completions.create(
             model=self.model, stream=False, messages=t.cast(t.Any, messages), **kwargs
         )
-        assert response.usage
-        return {
-            "completion": response.choices[0].message.content,
-            "prompt_tokens": response.usage.prompt_tokens,
-            "completion_tokens": response.usage.completion_tokens,
-        }
+        u = r.usage
+        assert u
+        c = r.choices[0].message.content
+        assert c
+        return provider.Result(c, provider.Usage(u.prompt_tokens, u.completion_tokens), r)

@@ -40,42 +40,72 @@ class OpenRouter(provider.Stream):
             **kwargs,
         }
 
-    def complete(self, messages: list[dict], **kwargs) -> dict:
+    def _complete(self, messages: list[dict], **kwargs) -> provider.Result:
         kwargs = self.prepare_input(**kwargs)
-        response = self.client.chat.completions.create(
+        r = self.client.chat.completions.create(
             model=self.model, messages=t.cast(t.Any, messages), stream=False, **kwargs
         )
-        assert response.usage
-        return {
-            "completion": response.choices[0].message.content,
-            "prompt_tokens": response.usage.prompt_tokens,
-            "completion_tokens": response.usage.completion_tokens,
-        }
+        assert r.usage
+        c = r.choices[0].message.content
+        assert c
+        return provider.Result(
+            c,
+            provider.Usage(
+                r.usage.prompt_tokens,
+                r.usage.completion_tokens,
+            ),
+            r,
+        )
 
-    async def acomplete(self, messages: list[dict], **kwargs) -> dict:
+    async def _acomplete(self, messages: list[dict], **kwargs) -> provider.Result:
         kwargs = self.prepare_input(**kwargs)
-        response = await self.async_client.chat.completions.create(
+        r = await self.async_client.chat.completions.create(
             model=self.model, messages=t.cast(t.Any, messages), stream=False, **kwargs
         )
-        assert response.usage
-        return {
-            "completion": response.choices[0].message.content,
-            "prompt_tokens": response.usage.prompt_tokens,
-            "completion_tokens": response.usage.completion_tokens,
-        }
+        assert r.usage
+        c = r.choices[0].message.content
+        assert c
+        return provider.Result(
+            c,
+            provider.Usage(
+                r.usage.prompt_tokens,
+                r.usage.completion_tokens,
+            ),
+            r,
+        )
 
-    def complete_stream(self, messages: list[dict], **kwargs) -> t.Iterator[str]:
+    def _complete_stream(self, messages: list[dict], **kwargs) -> t.Iterator[provider.Result]:
         kwargs = self.prepare_input(**kwargs)
-        for chunk in self.client.chat.completions.create(
+        for r in self.client.chat.completions.create(
             model=self.model, messages=t.cast(t.Any, messages), stream=True, **kwargs
         ):
-            if chunk.choices[0].delta.content is not None:
-                yield chunk.choices[0].delta.content
+            c = r.choices[0].delta.content
+            assert c
+            u = r.usage
+            assert u
+            yield provider.Result(
+                c,
+                provider.Usage(
+                    u.prompt_tokens,
+                    u.completion_tokens,
+                ),
+                r,
+            )
 
-    async def acomplete_stream(self, messages: list[dict], **kwargs) -> t.AsyncIterator[str]:
+    async def _acomplete_stream(self, messages: list[dict], **kwargs) -> t.AsyncIterator[provider.Result]:
         kwargs = self.prepare_input(**kwargs)
-        async for chunk in await self.async_client.chat.completions.create(
+        async for r in await self.async_client.chat.completions.create(
             model=self.model, messages=t.cast(t.Any, messages), stream=True, **kwargs
         ):
-            if chunk.choices[0].delta.content is not None:
-                yield chunk.choices[0].delta.content
+            c = r.choices[0].delta.content
+            assert c
+            u = r.usage
+            assert u
+            yield provider.Result(
+                c,
+                provider.Usage(
+                    u.prompt_tokens,
+                    u.completion_tokens,
+                ),
+                r,
+            )
